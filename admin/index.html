@@ -185,11 +185,13 @@
           
           <!-- DEFAULT HERO MEDIA -->
           <figure class="hero-media" id="default-hero" title="Click to upload Cover Image">
-            <div class="hero-subject-placeholder" id="default-hero-ph">
-              <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <div class="hero-subject-placeholder" id="default-hero-ph" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;">
+              <svg viewBox="0 0 24 24" style="width:44px; height:44px; fill:#94a3b8;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+              <span style="font-size:0.85rem; font-weight:700; color:#475569; font-family:'Inter',sans-serif;">Click to upload image</span>
+              <span id="hero-size-badge" style="background:#e2e8f0; color:#334155; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; font-family:'Inter',sans-serif;">Recommended: 1200 x 630 px</span>
             </div>
             <div id="default-hero-overlay" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); opacity:0; transition:0.2s; z-index:10;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
-                <span class="btn btn-primary" style="pointer-events:none;">[+] Click to Set Cover Image</span>
+                <span class="btn btn-primary" style="pointer-events:none;">[+] Click to Set Cover Image <small id="hero-overlay-size" style="opacity:0.9; font-size:0.75rem;">(1200 x 630 px)</small></span>
             </div>
             <img id="default-hero-img" src="" style="display:none; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;" />
             <input type="file" id="default-hero-input" accept="image/*" style="display:none;" />

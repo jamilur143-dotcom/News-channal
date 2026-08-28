@@ -40,7 +40,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeBlock = null;
 
     // --- 0. TEMPLATE SWITCHER ---
+    const templateImageSizes = {
+        'template1': '1200 x 630 px (16:9)',
+        'template2': '1100 x 600 px (16:9)',
+        'template3': '1100 x 550 px (2:1)',
+        'template4': '900 x 500 px (16:9)',
+        'template5': '1400 x 700 px (Large Banner)',
+        'template6': '1200 x 650 px (Hero Cover)',
+        'template7': '1000 x 500 px (2:1)',
+        'template8': '600 x 700 px (Portrait / Side)',
+        'template9': '400 x 480 px (Author Portrait)'
+    };
+
+    function updateHeroSizeHint(tpl) {
+        const size = templateImageSizes[tpl] || '1200 x 630 px';
+        const badge = document.getElementById('hero-size-badge');
+        if(badge) badge.textContent = `Recommended: ${size}`;
+        const overlaySize = document.getElementById('hero-overlay-size');
+        if(overlaySize) overlaySize.textContent = `(${size})`;
+    }
+
     const tplSelect = document.getElementById('template-selector');
+    if(tplSelect) {
+        updateHeroSizeHint(tplSelect.value);
+    }
     if (tplSelect) {
         tplSelect.addEventListener('change', (e) => {
             const canvas = document.getElementById('main-canvas');
@@ -74,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 2) APPLY NEW TEMPLATE LAYOUT
             const val = e.target.value;
+            updateHeroSizeHint(val);
             if (val === 'template2') {
                 // Template 2: Title -> Meta -> Hero -> Content
                 canvas.classList.add('template-2');
@@ -143,6 +167,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 const headerBanner = document.createElement('div');
                 headerBanner.id = 't9-header-banner';
                 headerBanner.className = 't9-header-banner';
+
+                // Background upload button for the header banner
+                const bgUploadBtn = document.createElement('div');
+                bgUploadBtn.className = 't9-bg-upload-btn';
+                bgUploadBtn.style = 'position:absolute; top:12px; right:16px; z-index:10;';
+                bgUploadBtn.innerHTML = `
+                    <button type="button" style="background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.35); backdrop-filter:blur(6px); font-size:0.75rem; font-weight:600; padding:6px 12px; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                        &#128247; Header BG (1200x320 px)
+                    </button>
+                    <input type="file" class="t9-bg-input" accept="image/*" style="display:none;" />
+                `;
+
+                const bgBtn = bgUploadBtn.querySelector('button');
+                const bgInput = bgUploadBtn.querySelector('input');
+                if(bgBtn && bgInput) {
+                    bgBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        bgInput.click();
+                    });
+                    bgInput.addEventListener('change', async function() {
+                        const file = this.files[0];
+                        if(file) {
+                            const tempUrl = URL.createObjectURL(file);
+                            headerBanner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.85)), url('${tempUrl}')`;
+                            headerBanner.style.backgroundSize = 'cover';
+                            headerBanner.style.backgroundPosition = 'center';
+
+                            try {
+                                const cdnUrl = await uploadToCloudinary(file);
+                                headerBanner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.85)), url('${cdnUrl}')`;
+                                console.log('Template 9 header background uploaded to Cloudinary:', cdnUrl);
+                            } catch(err) {
+                                console.error('Cloudinary bg upload error:', err);
+                                alert('Cloudinary Upload Failed: ' + err.message);
+                            }
+                        }
+                    });
+                }
+                headerBanner.appendChild(bgUploadBtn);
 
                 const headerLeft = document.createElement('div');
                 headerLeft.className = 't9-header-left';
@@ -351,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     let inner = '';
                     if(type === 'p') inner = '<div contenteditable="true" class="edit-text edit-p" data-type="text" placeholder="Start typing new paragraph..."></div>';
-                    if(type === 'img') inner = '<div class="img-ph">[img] Click to upload image</div><img src="" style="display:none; width:100%; object-fit:cover; border-radius:4px;" /><input type="file" class="hidden-file-input" accept="image/*" style="display:none;">';
+                    if(type === 'img') inner = '<div class="img-ph" style="display:flex; flex-direction:column; gap:6px; justify-content:center; align-items:center; cursor:pointer;"><span>[img] Click to upload image</span><span style="font-size:0.75rem; color:#64748b; background:#e2e8f0; padding:2px 8px; border-radius:10px; font-weight:600;">Recommended: 800 x 500 px (16:9)</span></div><img src="" style="display:none; width:100%; object-fit:cover; border-radius:4px;" /><input type="file" class="hidden-file-input" accept="image/*" style="display:none;">';
                     if(type === 'vid') inner = '<div class="vid-ph">&#9654; Click here, then set YouTube URL in the right panel</div><iframe src="" style="display:none; width:100%; aspect-ratio:16/9; border:none; border-radius:4px;" allowfullscreen></iframe>';
 
                     block.innerHTML = `<button class="block-del" title="Delete Block">&times;</button>${inner}`;
@@ -743,7 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
             canvasClone.removeAttribute('id'); // don't conflict IDs on landing page
             
             // Clean up admin-only UI elements
-            canvasClone.querySelectorAll('.remove-ad, .move-ad-left, .move-ad-right, .block-del, .drop-hint, .hero-subject-placeholder, #default-hero-overlay, .hidden-file-input').forEach(el => el.remove());
+            canvasClone.querySelectorAll('.remove-ad, .move-ad-left, .move-ad-right, .block-del, .drop-hint, .hero-subject-placeholder, #default-hero-overlay, .hidden-file-input, .t9-bg-upload-btn').forEach(el => el.remove());
             
             // Remove contenteditable attributes and admin classes
             canvasClone.querySelectorAll('[contenteditable]').forEach(el => {
