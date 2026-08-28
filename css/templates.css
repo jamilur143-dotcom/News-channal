@@ -165,7 +165,7 @@
     }
     .visual-canvas.template-5 .hero-media::before {
         content: ""; position: absolute; inset: 0;
-        background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.85) 100%);
+        background: rgba(0,0,0,0.6);
         z-index: 1; pointer-events: none;
     }
     .visual-canvas.template-5 .hero-subject-placeholder { display: none !important; }
@@ -202,7 +202,7 @@
     }
     .visual-canvas.template-6 .hero-media::before {
         content: ""; position: absolute; inset: 0;
-        background: linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.85) 100%);
+        background: rgba(0,0,0,0.5);
         z-index: 1; pointer-events: none;
     }
     .visual-canvas.template-6 .hero-subject-placeholder { display: none !important; }
@@ -370,3 +370,4 @@
 
 
 .article-layout-wrapper { justify-content: center; }
+

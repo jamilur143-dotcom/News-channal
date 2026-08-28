@@ -1,4 +1,21 @@
 ﻿document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- AD SETTINGS LOGIC ---
+    const adBannerInput = document.getElementById('global-ad-banner');
+    const adScriptInput = document.getElementById('global-ad-script');
+    const saveAdsBtn = document.getElementById('btn-save-ads');
+
+    if (adBannerInput && adScriptInput && saveAdsBtn) {
+        adBannerInput.value = localStorage.getItem('adBannerCode') || '';
+        adScriptInput.value = localStorage.getItem('adPopunderCode') || '';
+
+        saveAdsBtn.addEventListener('click', () => {
+            localStorage.setItem('adBannerCode', adBannerInput.value);
+            localStorage.setItem('adPopunderCode', adScriptInput.value);
+            alert('Ad settings saved successfully!');
+        });
+    }
+
     // Canvas & Dropzone
     const dropzone = document.getElementById('dropzone');
     
@@ -698,6 +715,7 @@
         });
     }
 });
+
 
 
 

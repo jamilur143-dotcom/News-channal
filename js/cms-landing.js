@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+﻿document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
     const articles = getArticles();
@@ -43,4 +43,53 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
     }
+
+    // --- AD INJECTION SYSTEM ---
+    const adBannerCode = localStorage.getItem('adBannerCode');
+    const adPopunderCode = localStorage.getItem('adPopunderCode');
+
+    // 1. Social Bar/Popunder Script (Header/Footer Injection)
+    if (adPopunderCode && adPopunderCode.trim() !== '') {
+        const temp = document.createElement('div');
+        temp.innerHTML = adPopunderCode;
+        Array.from(temp.childNodes).forEach(node => {
+            if (node.tagName && node.tagName.toLowerCase() === 'script') {
+                const script = document.createElement('script');
+                if (node.src) script.src = node.src;
+                script.text = node.textContent;
+                document.body.appendChild(script);
+            } else {
+                document.body.appendChild(node.cloneNode(true));
+            }
+        });
+    }
+
+    // 2. Middle Paragraph Banner Ad
+    if (adBannerCode && adBannerCode.trim() !== '') {
+        // Find paragraphs within the content container
+        const paragraphs = Array.from(contentContainer.querySelectorAll('.article-text, p')).filter(p => p.textContent.trim().length > 20);
+        if (paragraphs.length > 0) {
+            const middleIndex = Math.floor(paragraphs.length / 2);
+            const targetNode = paragraphs[middleIndex];
+            
+            const adWrapper = document.createElement('div');
+            adWrapper.className = 'in-content-ad';
+            adWrapper.style.margin = '32px auto';
+            adWrapper.style.textAlign = 'center';
+            adWrapper.style.display = 'flex';
+            adWrapper.style.justifyContent = 'center';
+            adWrapper.innerHTML = adBannerCode;
+            
+            // Re-evaluate scripts in the banner if any
+            Array.from(adWrapper.querySelectorAll('script')).forEach(oldScript => {
+                const newScript = document.createElement('script');
+                if (oldScript.src) newScript.src = oldScript.src;
+                newScript.text = oldScript.textContent;
+                oldScript.replaceWith(newScript);
+            });
+
+            targetNode.parentNode.insertBefore(adWrapper, targetNode.nextSibling);
+        }
+    }
 });
+
