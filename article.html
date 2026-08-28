@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/article.css" />
   <link rel="stylesheet" href="css/templates.css" />
+  <link rel="stylesheet" href="css/global-translator.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 </head>
@@ -47,16 +48,12 @@
         <li><a href="#" data-i18n="nav-business">Business</a></li>
       </ul>
       <div class="search-wrap">
-        <input type="search" class="search-input" placeholder="Search news…" />
-        <button class="search-btn">🔍</button>
+        <input type="search" class="search-input" placeholder="Search articles…" data-i18n-placeholder="search-placeholder" />
+        <button class="search-btn" aria-label="Search">🔍</button>
       </div>
-      <select class="lang-select" aria-label="Select language">
-        <option value="en">🌐 English</option>
-        <option value="bn">🇧🇩 বাংলা</option>
-        <option value="fr">🇫🇷 Français</option>
-        <option value="es">🇪🇸 Español</option>
-        <option value="ar">🇸🇦 العربية</option>
-      </select>
+      <button class="navbar-lang-btn" aria-label="Select language">
+        <span>🌐</span> <span class="current-lang-label">Language</span>
+      </button>
       <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
     </div>
     <div class="mobile-menu">
@@ -391,5 +388,6 @@
 </footer>
 
 <script src="js/main.js"></script>
+<script src="js/global-translator.js"></script>
 </body>
 </html>

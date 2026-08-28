@@ -15,6 +15,7 @@
   </style>
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/home.css" />
+  <link rel="stylesheet" href="css/global-translator.css" />
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -64,13 +65,9 @@
       </div>
 
       <!-- Language Selector -->
-      <select class="lang-select" aria-label="Select language">
-        <option value="en">🌐 English</option>
-        <option value="bn">🇧🇩 বাংলা</option>
-        <option value="fr">🇫🇷 Français</option>
-        <option value="es">🇪🇸 Español</option>
-        <option value="ar">🇸🇦 العربية</option>
-      </select>
+      <button class="navbar-lang-btn" aria-label="Select language">
+        <span>🌐</span> <span class="current-lang-label">Language</span>
+      </button>
 
       <!-- Hamburger -->
       <button class="hamburger" aria-label="Toggle menu" aria-expanded="false">
@@ -368,5 +365,6 @@
 <script src="js/home.js"></script>
 <script src="js/cms-db.js"></script>
 <script src="js/cms-home.js"></script>
+<script src="js/global-translator.js"></script>
 </body>
 </html>
