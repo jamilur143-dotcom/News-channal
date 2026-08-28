@@ -861,17 +861,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const fullHTML = canvasClone.outerHTML;
+            const adminHTML = document.getElementById('main-canvas').innerHTML; // Save exact builder state
+            
+            const isEditing = document.getElementById('main-canvas').dataset.editId;
 
             const article = {
-                id: 'art-' + Date.now(),
+                id: isEditing || 'art-' + Date.now(),
                 template: chosenTemplate,
                 ads: ads, 
                 title, excerpt, category, content: finalContent, media,
                 fullHTML: fullHTML,
+                adminHTML: adminHTML,
                 date: new Date().toISOString()
             };
 
-            addArticle(article);
+            if (isEditing) {
+                updateArticle(article.id, article);
+            } else {
+                addArticle(article);
+            }
             
             const successCard = document.getElementById('publish-success-card');
             const viewLiveBtn = document.getElementById('view-live-btn');
@@ -915,3 +923,129 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
+
+// --- MANAGE ARTICLES SYSTEM ---
+document.addEventListener('DOMContentLoaded', () => {
+    const btnManage = document.getElementById('btn-manage-articles');
+    const modalManage = document.getElementById('manage-articles-modal');
+    const btnCloseManage = document.getElementById('manage-modal-close');
+    const manageBody = document.getElementById('manage-modal-body');
+
+    if(btnManage && modalManage) {
+        btnManage.addEventListener('click', () => {
+            renderManageArticles();
+            modalManage.style.display = 'flex';
+        });
+
+        btnCloseManage.addEventListener('click', () => {
+            modalManage.style.display = 'none';
+        });
+
+        // Close on clicking outside
+        modalManage.addEventListener('click', (e) => {
+            if(e.target === modalManage) {
+                modalManage.style.display = 'none';
+            }
+        });
+    }
+
+    function renderManageArticles() {
+        if(!manageBody) return;
+        const articles = getArticles();
+        if(articles.length === 0) {
+            manageBody.innerHTML = '<div style="text-align:center; padding: 40px; color: #64748b;"><h3>No articles published yet.</h3><p>Create an article and click Publish Live to see it here.</p></div>';
+            return;
+        }
+
+        let html = '<div class="article-grid">';
+        articles.forEach(art => {
+            const dateStr = new Date(art.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+            
+            // Use placeholder if no media
+            let imgHtml = art.media ? `<img src="${art.media}" class="m-card-img" />` : `<div class="m-card-img" style="display:flex;align-items:center;justify-content:center;font-size:3rem;">📰</div>`;
+            
+            html += `
+                <div class="m-card" data-id="${art.id}">
+                    <span class="m-status-badge">Published</span>
+                    ${imgHtml}
+                    <div class="m-card-body">
+                        <div class="m-card-cat">${art.category}</div>
+                        <h3 class="m-card-title">${art.title || 'Untitled Article'}</h3>
+                        <div class="m-card-date">🕒 ${dateStr}</div>
+                        <div class="m-card-actions">
+                            <a href="../landing.html?id=${art.id}" target="_blank" class="m-btn m-btn-view">👁️ View</a>
+                            <button class="m-btn m-btn-edit" onclick="editArticle('${art.id}')">✏️ Edit</button>
+                            <button class="m-btn m-btn-delete" onclick="removeArticle('${art.id}')">🗑️ Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        manageBody.innerHTML = html;
+    }
+
+    window.removeArticle = function(id) {
+        if(confirm('Are you sure you want to permanently delete this article? This action cannot be undone.')) {
+            deleteArticle(id);
+            renderManageArticles(); // Refresh list
+        }
+    };
+
+    window.editArticle = function(id) {
+        const art = getArticleById(id);
+        if(!art) return;
+        
+        // 1. Set editing ID
+        const canvas = document.getElementById('main-canvas');
+        if(!canvas) return;
+        canvas.dataset.editId = id;
+        
+        // 2. Restore content
+        if (art.adminHTML) {
+            canvas.innerHTML = art.adminHTML;
+        } else if (art.fullHTML) {
+            // Fallback for older articles without adminHTML
+            canvas.innerHTML = art.fullHTML;
+            // Best-effort to restore editability
+            canvas.querySelectorAll('.article-text, h1, h2, span').forEach(el => {
+                if(!el.closest('.t9-quote-mark') && !el.closest('.meta-data')) {
+                    el.setAttribute('contenteditable', 'true');
+                    el.classList.add('edit-text');
+                }
+            });
+            // Show placeholders again if empty
+            const ph = canvas.querySelector('.hero-subject-placeholder');
+            if(!ph) {
+                // Not perfect, but we try
+            }
+        } else {
+            // very old articles
+            canvas.innerHTML = art.content; 
+        }
+
+        // 3. Restore Category Selection
+        const catSelect = document.getElementById('news-cat');
+        if(catSelect) {
+            for(let i=0; i<catSelect.options.length; i++) {
+                if(catSelect.options[i].text === art.category) {
+                    catSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+        
+        // Restore Template selection visually (does not rebuild canvas since it's already built)
+        const tplSelect = document.getElementById('template-selector');
+        if (tplSelect && art.template) {
+            tplSelect.value = art.template;
+        }
+
+        // Close modal
+        modalManage.style.display = 'none';
+        
+        alert('Article loaded into editor! Make your changes and click "Publish Live" to update.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+});

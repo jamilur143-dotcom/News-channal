@@ -59,3 +59,15 @@ function addArticle(article) {
 function getArticleById(id) {
   return getArticles().find(a => a.id === id);
 }
+
+function updateArticle(id, updatedData) {
+  let articles = getArticles();
+  articles = articles.map(a => a.id === id ? { ...a, ...updatedData } : a);
+  localStorage.setItem(DB_KEY, JSON.stringify(articles));
+}
+
+function deleteArticle(id) {
+  let articles = getArticles();
+  articles = articles.filter(a => a.id !== id);
+  localStorage.setItem(DB_KEY, JSON.stringify(articles));
+}
