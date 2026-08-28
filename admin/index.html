@@ -130,21 +130,23 @@
           </div>
           <div class="form-panel-body" style="display: flex; flex-direction: column; gap: 12px;">
             <p style="font-size:0.75rem; color:#64748b; line-height:1.4; margin:0;">Drag elements into the canvas to build layout.</p>
-            
-            <div class="tool-item" draggable="true" data-type="p">
-              <span style="font-size:1.2rem; color:#1A237E;">&para;</span> Paragraph
-            </div>
-            <div class="tool-item" draggable="true" data-type="img">
-              <span style="font-size:1.2rem; color:#1A237E;">[img]</span> Image
-            </div>
-            <div class="tool-item" draggable="true" data-type="vid">
-              <span style="font-size:1.2rem; color:#1A237E;">[vid]</span> Video
-            </div>
-            <div class="tool-item" draggable="true" data-type="split">
-              <span style="font-size:1.2rem; color:#1A237E;">[||]</span> Split (Columns)
-            </div>
-            
-            <hr style="border:0; border-top:1px solid #e2e8f0; margin:4px 0;" />
+              
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 4px;">
+                <div class="tool-item tool-square" draggable="true" data-type="p" title="Paragraph">
+                  <span style="font-size:1.8rem; color:#1A237E;">&para;</span>
+                </div>
+                <div class="tool-item tool-square" draggable="true" data-type="img" title="Image">
+                  <span style="font-size:1.8rem; color:#1A237E;">[img]</span>
+                </div>
+                <div class="tool-item tool-square" draggable="true" data-type="vid" title="Video">
+                  <span style="font-size:1.8rem; color:#1A237E;">[vid]</span>
+                </div>
+                <div class="tool-item tool-square" draggable="true" data-type="split" title="Split (Columns)">
+                  <span style="font-size:1.8rem; color:#1A237E;">[||]</span>
+                </div>
+              </div>
+              
+              <hr style="border:0; border-top:1px solid #e2e8f0; margin:4px 0;" />
             <p style="font-size:0.7rem; color:#64748b; margin:0; text-transform:uppercase; letter-spacing:0.05em; font-weight:bold;">Ad Placements</p>
 
             <div class="tool-item" draggable="true" data-type="ad-h">
@@ -425,5 +427,6 @@
 <script src="../js/cms-admin.js"></script>
 </body>
 </html>
+
 
 
