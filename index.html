@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexusNews — Breaking News &amp; Trending Topics</title>
+  <meta name="description" content="Stay informed with the latest breaking news and trending topics from around the world." />
+  <!-- Reading Progress Bar -->
+  <style>
+    #reading-progress {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: var(--accent, #E53935); width: 0;
+      z-index: 9999; transition: width .1s linear;
+    }
+  </style>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/home.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<div id="reading-progress"></div>
+
+<!-- ════════════════════════════════════════════════════════
+     SITE HEADER
+═══════════════════════════════════════════════════════════ -->
+<header class="site-header">
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="container">
+      <span>📅 Tuesday, August 26, 2026</span>
+      <div class="flex gap-16">
+        <a href="#">Live TV 📺</a>
+        <a href="#">E-Paper 📰</a>
+        <a href="admin/index.html">Admin ⚙️</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navbar -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container">
+      <a href="index.html" class="logo" aria-label="NexusNews Home">
+        <img src="assets/logo.svg" alt="NexusNews" width="140" height="36" />
+      </a>
+
+      <ul class="nav-links" role="list">
+        <li><a href="index.html" class="active" data-i18n="nav-home">Home</a></li>
+        <li><a href="#" data-i18n="nav-politics">Politics</a></li>
+        <li><a href="#" data-i18n="nav-tech">Technology</a></li>
+        <li><a href="#" data-i18n="nav-sports">Sports</a></li>
+        <li><a href="#" data-i18n="nav-entertainment">Entertainment</a></li>
+        <li><a href="#" data-i18n="nav-world">World</a></li>
+        <li><a href="#" data-i18n="nav-business">Business</a></li>
+      </ul>
+
+      <!-- Search -->
+      <div class="search-wrap" role="search">
+        <input
+          type="search"
+          class="search-input"
+          placeholder="Search news…"
+          aria-label="Search articles"
+          data-i18n-placeholder="search-placeholder"
+        />
+        <button class="search-btn" aria-label="Search">🔍</button>
+      </div>
+
+      <!-- Language Selector -->
+      <select class="lang-select" aria-label="Select language">
+        <option value="en">🌐 English</option>
+        <option value="bn">🇧🇩 বাংলা</option>
+        <option value="fr">🇫🇷 Français</option>
+        <option value="es">🇪🇸 Español</option>
+        <option value="ar">🇸🇦 العربية</option>
+      </select>
+
+      <!-- Hamburger -->
+      <button class="hamburger" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+
+    <!-- Mobile Dropdown Menu -->
+    <div class="mobile-menu" role="menu">
+      <div class="mobile-search">
+        <input type="search" placeholder="Search news…" aria-label="Search" />
+        <button aria-label="Go">🔍</button>
+      </div>
+      <a href="index.html" data-i18n="nav-home">Home</a>
+      <a href="#" data-i18n="nav-politics">Politics</a>
+      <a href="#" data-i18n="nav-tech">Technology</a>
+      <a href="#" data-i18n="nav-sports">Sports</a>
+      <a href="#" data-i18n="nav-entertainment">Entertainment</a>
+      <a href="#" data-i18n="nav-world">World</a>
+      <a href="#" data-i18n="nav-business">Business</a>
+      <select class="lang-select" style="margin-top:8px;width:100%">
+        <option value="en">🌐 English</option>
+        <option value="bn">🇧🇩 বাংলা</option>
+        <option value="fr">🇫🇷 Français</option>
+        <option value="es">🇪🇸 Español</option>
+        <option value="ar">🇸🇦 العربية</option>
+      </select>
+    </div>
+  </nav>
+
+  <!-- Category Nav Bar -->
+  <nav class="cat-nav" aria-label="Categories">
+    <div class="container">
+      <a href="#" class="active">🔥 Trending</a>
+      <a href="#">🌍 World</a>
+      <a href="#">🏛️ Politics</a>
+      <a href="#">💼 Business</a>
+      <a href="#">💻 Technology</a>
+      <a href="#">🏋️ Sports</a>
+      <a href="#">🎬 Entertainment</a>
+      <a href="#">🔬 Science</a>
+      <a href="#">🏥 Health</a>
+      <a href="#">🌿 Environment</a>
+    </div>
+  </nav>
+</header>
+
+<!-- ════════════════════════════════════════════════════════
+     BREAKING NEWS TICKER
+═══════════════════════════════════════════════════════════ -->
+<div class="ticker-wrap" aria-label="Breaking news ticker">
+  <div class="container">
+    <div class="ticker-inner">
+      <span class="ticker-label">🔴 Breaking</span>
+      <div style="overflow:hidden;flex:1;padding-left:20px;display:flex;">
+        <div class="ticker-track">
+          <a href="article.html">World leaders convene for emergency climate summit in Geneva →</a>
+          <a href="article.html">Tech giant unveils next-gen AI chip surpassing all benchmarks →</a>
+          <a href="article.html">Historic peace deal signed after decade-long conflict →</a>
+          <a href="article.html">Global markets rally following unexpected rate decision →</a>
+          <a href="article.html">Scientists confirm breakthrough in cancer immunotherapy →</a>
+          <a href="article.html">Olympic committee announces 2030 host city selection →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════════════ -->
+<main>
+  <div class="container">
+
+    <!-- ── HERO SECTION (Dynamic) ─────────────────────── -->
+    <section class="hero" id="dynamic-hero" aria-label="Featured story">
+      <!-- Dynamic Hero injected here by js/cms-home.js -->
+    </section>
+
+    <!-- ── SECONDARY FEATURED (3 cards) ─────────────────── -->
+    <section class="featured-secondary" aria-label="Featured stories">
+      <a href="article.html" class="feat-card">
+        <div class="feat-card-body">
+          <span class="badge badge-tech">Technology</span>
+          <h3>Quantum Computing Milestone: First Error-Free 1000-Qubit Processor Demonstrated</h3>
+          <div class="feat-card-meta"><span>💻 Tech Desk</span><span>3h ago</span></div>
+        </div>
+      </a>
+      <a href="article.html" class="feat-card" style="background:linear-gradient(135deg,#1b5e20,#388e3c)">
+        <div class="feat-card-body">
+          <span class="badge badge-sports">Sports</span>
+          <h3>Championship Final: Underdog Nation Stuns Favorites in Penalty Shootout Drama</h3>
+          <div class="feat-card-meta"><span>🏆 Sports Desk</span><span>5h ago</span></div>
+        </div>
+      </a>
+      <a href="article.html" class="feat-card" style="background:linear-gradient(135deg,#4a148c,#7b1fa2)">
+        <div class="feat-card-body">
+          <span class="badge badge-entertainment">Entertainment</span>
+          <h3>Blockbuster Film Breaks All-Time Opening Weekend Record with $980M Global Gross</h3>
+          <div class="feat-card-meta"><span>🎬 Entertainment</span><span>6h ago</span></div>
+        </div>
+      </a>
+    </section>
+
+    <!-- ── AD BANNER ──────────────────────────────────────── -->
+    <div class="ad-zone ad-zone-banner mt-24 mb-24">
+      <span>📢</span>
+      Advertisement — 728×90
+    </div>
+
+    <!-- ── MAIN CONTENT + SIDEBAR LAYOUT ─────────────────── -->
+    <div class="content-layout">
+
+      <!-- Main Column -->
+      <div class="main-col">
+        <!-- Section Header + Filter Tabs -->
+        <div class="section-header">
+          <h2>Latest &amp; Trending</h2>
+          <a href="#" class="btn btn-outline btn-sm">View All →</a>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs" role="tablist" aria-label="Filter by category">
+          <button class="filter-tab active" data-category="all" role="tab">All</button>
+          <button class="filter-tab" data-category="politics" role="tab">🏛️ Politics</button>
+          <button class="filter-tab" data-category="technology" role="tab">💻 Technology</button>
+          <button class="filter-tab" data-category="sports" role="tab">🏆 Sports</button>
+          <button class="filter-tab" data-category="entertainment" role="tab">🎬 Entertainment</button>
+          <button class="filter-tab" data-category="world" role="tab">🌍 World</button>
+          <button class="filter-tab" data-category="business" role="tab">💼 Business</button>
+        </div>
+
+        <!-- News Grid (Dynamic) -->
+        <div class="news-grid" id="dynamic-news-grid">
+          <!-- Dynamic Grid injected here by js/cms-home.js -->
+        </div><!-- /news-grid -->
+
+        <!-- Load More -->
+        <div class="load-more-wrap">
+          <button class="btn btn-outline" id="load-more-btn" style="min-width:200px">
+            Load More Articles ↓
+          </button>
+        </div>
+
+      </div><!-- /main-col -->
+
+      <!-- ── SIDEBAR ──────────────────────────────────── -->
+      <aside class="sidebar" aria-label="Sidebar">
+
+        <div class="sidebar-sticky">
+          <!-- Most Popular -->
+          <div class="sidebar-widget">
+            <h3 class="widget-title">Most Popular</h3>
+            <ol class="popular-list">
+              <li class="popular-item">
+                <span class="popular-num">1</span>
+                <div class="popular-text">
+                  <a href="article.html">Climate Accord Passes: What It Means for Your Country</a>
+                  <small>📈 142K reads today</small>
+                </div>
+              </li>
+              <li class="popular-item">
+                <span class="popular-num">2</span>
+                <div class="popular-text">
+                  <a href="article.html">How the AI Revolution Is Reshaping Every Industry by 2030</a>
+                  <small>📈 98K reads today</small>
+                </div>
+              </li>
+              <li class="popular-item">
+                <span class="popular-num">3</span>
+                <div class="popular-text">
+                  <a href="article.html">Inside the Championship: Tactics Behind the Upset</a>
+                  <small>📈 76K reads today</small>
+                </div>
+              </li>
+              <li class="popular-item">
+                <span class="popular-num">4</span>
+                <div class="popular-text">
+                  <a href="article.html">Rate Cut Explainer: How to Protect Your Savings</a>
+                  <small>📈 54K reads today</small>
+                </div>
+              </li>
+              <li class="popular-item">
+                <span class="popular-num">5</span>
+                <div class="popular-text">
+                  <a href="article.html">The Film That Changed Everything About Indie Cinema</a>
+                  <small>📈 41K reads today</small>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          <!-- Ad Zone -->
+          <div class="ad-zone ad-zone-sidebar">
+            <span>📢</span>
+            Advertisement
+            <small>300×250</small>
+          </div>
+
+          <!-- Newsletter -->
+          <div class="sidebar-widget">
+            <h3 class="widget-title">Daily Briefing</h3>
+            <div class="newsletter-form">
+              <p>Get the top 5 stories every morning, curated by our editors.</p>
+              <input type="email" class="newsletter-input" placeholder="your@email.com" aria-label="Email address" />
+              <button class="btn btn-primary" style="width:100%;justify-content:center">
+                Subscribe Free →
+              </button>
+              <p style="font-size:.72rem;color:var(--text-muted);margin-top:8px;margin-bottom:0">
+                No spam. Unsubscribe anytime.
+              </p>
+            </div>
+          </div>
+
+          <!-- Second Ad -->
+          <div class="ad-zone" style="height:200px">
+            <span>📢</span>
+            Advertisement
+            <small>300×200</small>
+          </div>
+        </div>
+
+      </aside>
+
+    </div><!-- /content-layout -->
+
+  </div><!-- /container -->
+</main>
+
+<!-- ════════════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════════════ -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo" style="margin-bottom:12px">
+          <span class="logo-text"><span>N</span>exusNews</span>
+        </div>
+        <p>Your trusted source for breaking news, in-depth analysis, and trending stories from every corner of the globe. Fact-checked. Fast. Fair.</p>
+        <div class="social-links" style="margin-top:20px">
+          <a href="#" aria-label="Facebook">f</a>
+          <a href="#" aria-label="Twitter">𝕏</a>
+          <a href="#" aria-label="Instagram">📷</a>
+          <a href="#" aria-label="YouTube">▶</a>
+          <a href="#" aria-label="LinkedIn">in</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Sections</h4>
+        <ul>
+          <li><a href="#">World News</a></li>
+          <li><a href="#">Politics</a></li>
+          <li><a href="#">Business</a></li>
+          <li><a href="#">Technology</a></li>
+          <li><a href="#">Science</a></li>
+          <li><a href="#">Health</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Entertainment</h4>
+        <ul>
+          <li><a href="#">Movies</a></li>
+          <li><a href="#">Music</a></li>
+          <li><a href="#">Sports</a></li>
+          <li><a href="#">Gaming</a></li>
+          <li><a href="#">Culture</a></li>
+          <li><a href="#">Lifestyle</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Advertise</a></li>
+          <li><a href="#">Contact</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Use</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 NexusNews. All rights reserved.</span>
+      <div class="social-links">
+        <a href="#" aria-label="RSS Feed">📡</a>
+        <a href="#" aria-label="Podcast">🎙️</a>
+        <a href="#" aria-label="Newsletter">✉️</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+<script src="js/home.js"></script>
+<script src="js/cms-db.js"></script>
+<script src="js/cms-home.js"></script>
+</body>
+</html>

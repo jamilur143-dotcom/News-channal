@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visual Editor â€” NexusNews Admin</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/admin.css" />
+  <link rel="stylesheet" href="../css/templates.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Georgia&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Poppins:wght@400;600&family=Merriweather:wght@400;700&family=Noto+Sans+Bengali:wght@400;600;700&family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet" />
+  
+  <style>
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+       LAYOUT OVERRIDES
+       â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    .admin-main { margin-left: 0 !important; width: 100% !important; }
+    .admin-hamburger { display: none !important; }
+
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+       BUILDER SPECIFIC STYLES
+       â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    .builder-container { display: flex; gap: 24px; align-items: flex-start; }
+    
+    .tool-item {
+      padding: 12px; border: 1px solid var(--border); border-radius: 6px; 
+      background: #fff; cursor: grab; display: flex; align-items: center; gap: 10px; 
+      font-size: 0.95rem; font-weight: 500; font-family: 'Inter', sans-serif; color: #334155;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02); transition: 0.2s;
+    }
+    .tool-item:hover { border-color: #1A237E; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+    .visual-canvas {
+      font-family: 'Georgia', serif; line-height: 1.8; background: #ffffff; color: #111111;
+      border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-top: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    
+    /* 
+       ==========================================
+       SMART AD SLOTS
+       ==========================================
+    */
+    .predefined-ad {
+      background: #f8fafc; border: 2px dashed #94a3b8; color: #64748b;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600;
+      position: relative; margin: 24px auto; transition: 0.3s;
+    }
+    .ad-horizontal { width: 728px; max-width: 100%; height: 90px; }
+    .ad-vertical { width: 300px; height: 600px; margin: 0 auto; }
+    .ad-square { width: 300px; height: 250px; margin: 24px auto; }
+    .remove-ad { 
+      position: absolute; top: -12px; right: -12px; background: #ef4444; color: white; 
+      border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; 
+      display: flex; align-items: center; justify-content: center; font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10;
+    }
+    .remove-ad:hover { background: #dc2626; }
+
+    /* Elements */
+    .edit-text { outline: none; transition: 0.2s; border-radius: 4px; border: 2px dashed transparent; padding: 4px; margin-left: -4px; }
+    .edit-text:hover { border-color: #e2e8f0; }
+    .edit-text.active { border-color: #90caf9; background: rgba(248, 250, 252, 0.2); }
+    .edit-text:empty::before { content: attr(placeholder); color: #94a3b8; pointer-events: none; }
+    
+    #default-title { font-family: 'Inter', sans-serif; font-size: clamp(2.2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.15; margin-bottom: 24px; letter-spacing: -0.02em; transition: all 0.3s ease; }
+    .edit-p { font-size: 1.15rem; margin-bottom: 28px; min-height: 1.8em; }
+
+    #dropzone { margin-top: 40px; padding: 40px 20px; border: 2px dashed #cbd5e1; border-radius: 8px; text-align: center; color: #94a3b8; font-family: 'Inter', sans-serif; font-size: 0.9rem; transition: 0.2s; }
+    #dropzone.drag-hover { border-color: #2196f3; background: #e3f2fd; color: #1565c0; }
+    #dropzone:has(.canvas-block) { padding: 0; border: none; background: transparent; }
+    #dropzone:has(.canvas-block) .drop-hint { display: none; }
+    
+    .canvas-block { position: relative; margin-bottom: 24px; border: 2px dashed transparent; border-radius: 4px; transition: 0.2s; }
+    .canvas-block:hover { border-color: #cbd5e1; }
+    .canvas-block.active { border-color: #90caf9; }
+    
+    .block-del { position: absolute; top: -12px; right: -12px; background: #ef4444; color: #fff; width: 24px; height: 24px; border-radius: 50%; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; font-weight: bold; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .canvas-block.active .block-del { display: flex; }
+    
+    .img-ph { background: #f1f5f9; height: 250px; display: flex; align-items: center; justify-content: center; color: #64748b; font-family: 'Inter', sans-serif; cursor: pointer; border-radius: 4px; border: 2px dashed #cbd5e1; }
+    .vid-ph { background: #1e293b; height: 350px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Inter', sans-serif; cursor: pointer; border-radius: 4px; border: 2px dashed #475569; }
+
+    /* SETTINGS */
+    .fmt-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .fmt-btn { padding: 8px 12px; border: 1px solid var(--border); background: #fff; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 0.9rem; color: #334155; display: flex; align-items: center; justify-content: center; }
+    .fmt-btn:hover { background: #f1f5f9; }
+    
+  </style>
+</head>
+<body class="admin-body">
+
+<div class="admin-main">
+  <!-- TOPBAR -->
+  <header class="admin-topbar">
+    <div class="flex gap-12">
+      <div>
+        <div class="breadcrumb-admin"><a href="#">Dashboard</a> â€º Visual Editor</div>
+        <h2>Create Article (Visual Builder)</h2>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <select id="template-selector" class="field-input field-select" style="width:260px; padding:6px; font-size:0.85rem; border-color:var(--primary); font-weight:600; color:var(--primary);">
+          <option value="template1">Template 1: Minimalist (Hero First)</option>
+          <option value="template2">Template 2: Standard (Title First)</option>
+          <option value="template3">Template 3: Editorial (Meta First)</option>
+          <option value="template4">Template 4: Magazine Split Intro</option>
+          <option value="template5">Template 5: Immersive Hero</option>
+          <option value="template6">Template 6: Sidebar & Editorial</option>
+          <option value="template7">Template 7: Floating Box Layout</option>
+          <option value="template8">Template 8: Split Cover (Side-by-Side)</option>
+        </select>
+        <a href="../index.html" class="btn btn-outline btn-sm">&larr; Back to Site</a>
+      </div>
+      <div class="topbar-user"><div class="topbar-avatar">AD</div></div>
+    </div>
+  </header>
+
+  <div class="admin-content">
+    
+    <div class="builder-container">
+      
+      <!-- COLUMN 1: TOOLKIT -->
+      <div style="width: 240px; flex-shrink: 0; position: sticky; top: 20px;">
+        <div class="form-panel">
+          <div class="form-panel-header" style="border-bottom:1px solid #e2e8f0; background:#f8fafc; padding:12px 16px;">
+            <h3 style="font-size: 0.95rem; color: #1A237E; letter-spacing: 0.05em; margin:0;">[+] ELEMENTS</h3>
+          </div>
+          <div class="form-panel-body" style="display: flex; flex-direction: column; gap: 12px;">
+            <p style="font-size:0.75rem; color:#64748b; line-height:1.4; margin:0;">Drag elements into the canvas to build layout.</p>
+            
+            <div class="tool-item" draggable="true" data-type="p">
+              <span style="font-size:1.2rem; color:#1A237E;">&para;</span> Paragraph
+            </div>
+            <div class="tool-item" draggable="true" data-type="img">
+              <span style="font-size:1.2rem; color:#1A237E;">[img]</span> Image
+            </div>
+            <div class="tool-item" draggable="true" data-type="vid">
+              <span style="font-size:1.2rem; color:#1A237E;">[vid]</span> Video
+            </div>
+            <div class="tool-item" draggable="true" data-type="split">
+              <span style="font-size:1.2rem; color:#1A237E;">[||]</span> Split (Columns)
+            </div>
+            
+            <hr style="border:0; border-top:1px solid #e2e8f0; margin:4px 0;" />
+            <p style="font-size:0.7rem; color:#64748b; margin:0; text-transform:uppercase; letter-spacing:0.05em; font-weight:bold;">Ad Placements</p>
+
+            <div class="tool-item" draggable="true" data-type="ad-h">
+              <span style="font-size:1.2rem; color:#4caf50;">[$]</span> Horizontal Banner
+            </div>
+            <div class="tool-item" draggable="true" data-type="ad-v">
+              <span style="font-size:1.2rem; color:#4caf50;">[$]</span> Vertical Sidebar
+            </div>
+            <div class="tool-item" draggable="true" data-type="ad-sq">
+              <span style="font-size:1.2rem; color:#4caf50;">[$]</span> Square Inline
+            </div>
+          </div>
+        </div>
+
+        <!-- NEW: Live Link Container (Visible by default as empty state) -->
+        <div id="publish-success-card" style="margin-top: 16px; padding: 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; text-align: center; transition: all 0.3s;">
+           <p id="publish-status-text" style="font-size: 0.8rem; color: #64748b; margin-bottom: 8px;">Not published yet.</p>
+           
+           <a id="visit-website-btn" href="../index.html" target="_blank" style="display: block; padding: 10px 12px; background: #334155; color: white; text-decoration: none; border-radius: 4px; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; transition: background 0.2s;">&#127968; Visit Website</a>
+           
+           <a id="view-live-btn" href="#" target="_blank" style="display: none; padding: 10px 12px; background: #16a34a; color: white; text-decoration: none; border-radius: 4px; font-size: 0.85rem; font-weight: 600; transition: background 0.2s;">&#128196; View Article &rarr;</a>
+        </div>
+      </div>
+
+      <!-- COLUMN 2: CANVAS -->
+      <div style="flex: 1; min-width: 0;">
+        
+        <div class="visual-canvas" id="main-canvas">
+          
+          <!-- TOP AD SLOT (Horizontal) -->
+          <div class="predefined-ad ad-horizontal" id="ad-top" style="display:none;" data-slot="top">
+            <button class="remove-ad" title="Remove Ad">&times;</button>
+            <span>Top Leaderboard Ad (728x90)</span>
+          </div>
+          
+          <!-- DEFAULT HERO MEDIA -->
+          <figure class="hero-media" id="default-hero" title="Click to upload Cover Image">
+            <div class="hero-subject-placeholder" id="default-hero-ph">
+              <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            </div>
+            <div id="default-hero-overlay" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); opacity:0; transition:0.2s; z-index:10;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
+                <span class="btn btn-primary" style="pointer-events:none;">[+] Click to Set Cover Image</span>
+            </div>
+            <img id="default-hero-img" src="" style="display:none; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;" />
+            <input type="file" id="default-hero-input" accept="image/*" style="display:none;" />
+          </figure>
+
+          <!-- 2-COLUMN ARTICLE LAYOUT -->
+          <div class="article-layout-wrapper">
+            
+            <main class="article-container">
+              
+              <h1 contenteditable="true" id="default-title" class="edit-text" placeholder="Type your main headline here..."></h1>
+              
+              <div class="meta-data">
+                <span><small>Date</small><strong>Oct 14, 2026</strong></span>
+                <span><small>Category</small><strong>Technology</strong></span>
+                <span><small>Author</small><strong>Nexus Editorial</strong></span>
+              </div>
+  
+              <div contenteditable="true" id="default-content" class="edit-text edit-p" placeholder="Start writing your intro paragraph here..."></div>
+              
+              <div id="dropzone">
+                 <div class="drop-hint">Drop extra paragraphs, images, videos, and square ads here...</div>
+              </div>
+            </main>
+
+            <aside class="article-sidebar">
+               <!-- SIDEBAR AD SLOT (Vertical) -->
+               <div class="predefined-ad ad-vertical" id="ad-sidebar" style="display:none;" data-slot="sidebar">
+                  <div style="position:absolute; top:8px; left:8px; display:flex; gap:4px;">
+                      <button class="move-ad-left" title="Move Sidebar to Left" style="background:#fff; border:1px solid #ccc; border-radius:4px; cursor:pointer; padding:2px 6px;">&larr;</button>
+                      <button class="move-ad-right" title="Move Sidebar to Right" style="background:#fff; border:1px solid #ccc; border-radius:4px; cursor:pointer; padding:2px 6px; display:none;">&rarr;</button>
+                  </div>
+                  <button class="remove-ad" title="Remove Ad">&times;</button>
+                  <span>Sidebar Banner (300x600)</span>
+               </div>
+            </aside>
+
+          </div>
+
+          <!-- BOTTOM AD SLOT (Horizontal) -->
+          <div class="predefined-ad ad-horizontal" id="ad-bottom" style="display:none;" data-slot="bottom">
+            <button class="remove-ad" title="Remove Ad">&times;</button>
+            <span>Bottom Banner Ad (728x90)</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- COLUMN 3: SETTINGS -->
+      <div style="width: 300px; flex-shrink: 0; position: sticky; top: 20px;">
+        
+        <div class="publish-card">
+          <div class="publish-card-header">
+            <h3>&#9654; Publish Actions</h3>
+          </div>
+          <div class="publish-card-body">
+            <div class="publish-meta">
+              <div class="publish-row">
+                <label>Status</label>
+                <select class="field-input field-select" style="width:auto;padding:5px 28px 5px 10px;font-size:.85rem"><option selected>Published</option><option>Draft</option></select>
+              </div>
+            </div>
+            <div class="publish-actions">
+              <button class="btn btn-publish" id="publish-btn">&#10003; Publish Live</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="dynamic-panels" class="mt-16">
+          
+          <!-- Meta Data -->
+          <div id="panel-meta" class="form-panel" style="display:block;">
+            <div class="form-panel-header"><h3>&#9881; Meta Data</h3></div>
+            <div class="form-panel-body">
+               <div class="field-group">
+                  <label class="field-label">Category</label>
+                  <select id="news-cat" class="field-input field-select">
+                    <option value="world">World</option>
+                    <option value="politics">Politics</option>
+                    <option value="technology">Technology</option>
+                    <option value="sports">Sports</option>
+                  </select>
+               </div>
+               <div class="field-group">
+                  <label class="field-label">Short Excerpt</label>
+                  <textarea id="news-excerpt" class="field-input" rows="3" placeholder="Grid preview text..."></textarea>
+               </div>
+            </div>
+          </div>
+
+          <!-- Text Formatting -->
+          <div id="panel-text" class="form-panel" style="display:none;">
+            <div class="form-panel-header"><h3>&#9998; Text Formatting</h3></div>
+            <div class="form-panel-body">
+              
+              <!-- Block Type -->
+              <div class="field-group">
+                <label class="field-label">Text Type (Headings)</label>
+                <select id="fmt-block" class="field-input field-select">
+                  <option value="P">Paragraph (Normal)</option>
+                  <option value="H1">Heading 1</option>
+                  <option value="H2">Heading 2</option>
+                  <option value="H3">Heading 3</option>
+                  <option value="H4">Heading 4</option>
+                  <option value="H5">Heading 5</option>
+                  <option value="H6">Heading 6</option>
+                </select>
+              </div>
+
+              <!-- Font Family -->
+              <div class="field-group">
+                <label class="field-label">Font Family</label>
+                <select id="fmt-font" class="field-input field-select">
+                  <optgroup label="English Fonts (Google)">
+                      <option value="Georgia, serif">Georgia (Default)</option>
+                      <option value="'Inter', sans-serif">Inter</option>
+                      <option value="'Roboto', sans-serif">Roboto</option>
+                      <option value="'Open Sans', sans-serif">Open Sans</option>
+                      <option value="'Poppins', sans-serif">Poppins</option>
+                      <option value="'Merriweather', serif">Merriweather</option>
+                  </optgroup>
+                  <optgroup label="Bangla Free Fonts (Google)">
+                      <option value="'Noto Sans Bengali', sans-serif">Noto Sans Bengali</option>
+                      <option value="'Hind Siliguri', sans-serif">Hind Siliguri</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <!-- Style -->
+              <div class="field-group">
+                <label class="field-label">Style</label>
+                <div class="fmt-row">
+                  <button class="fmt-btn" data-cmd="bold" title="Bold"><strong>B</strong></button>
+                  <button class="fmt-btn" data-cmd="italic" title="Italic"><em>I</em></button>
+                  <button class="fmt-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                </div>
+              </div>
+
+              <!-- Alignment -->
+              <div class="field-group">
+                <label class="field-label">Alignment</label>
+                <div class="fmt-row">
+                  <button class="fmt-btn" data-cmd="justifyLeft" title="Left">&larr; Left</button>
+                  <button class="fmt-btn" data-cmd="justifyCenter" title="Center">&harr; Center</button>
+                  <button class="fmt-btn" data-cmd="justifyRight" title="Right">&rarr; Right</button>
+                  <button class="fmt-btn" data-cmd="justifyFull" title="Justify">&equiv; Justify</button>
+                </div>
+              </div>
+      
+              <!-- Text Color -->
+              <div class="field-group">
+                <label class="field-label">Text Color</label>
+                <input type="color" id="fmt-color" value="#111111" style="width:100%; height:40px; cursor:pointer; border:1px solid var(--border); border-radius:4px;" />
+              </div>
+
+              <!-- Font Size -->
+              <div class="field-group">
+                <label class="field-label">Font Size (px)</label>
+                <div style="display:flex; gap:12px; align-items:center;">
+                  <input type="range" id="fmt-size-slider" min="12" max="100" value="18" style="flex:1;">
+                  <input type="number" id="fmt-size-input" min="8" max="200" value="18" style="width:70px; padding:6px; border:1px solid #cbd5e1; border-radius:4px; font-family:'Inter',sans-serif; text-align:center;">
+                </div>
+              </div>
+      
+              <!-- Tracking -->
+              <div class="field-group">
+                <label class="field-label">Tracking (Letter Spacing)</label>
+                <input type="range" id="fmt-tracking" min="-2" max="10" value="0" style="width:100%;">
+                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#888; margin-top:4px;"><span>Tight</span><span>Loose</span></div>
+              </div>
+
+              <!-- Leading -->
+              <div class="field-group">
+                <label class="field-label">Leading (Line Height)</label>
+                <input type="range" id="fmt-leading" min="1" max="3" step="0.1" value="1.8" style="width:100%;">
+                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#888; margin-top:4px;"><span>Tight</span><span>Loose</span></div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Split Layout Options -->
+          <div id="panel-split" class="form-panel" style="display:none;">
+            <div class="form-panel-header"><h3>&#9636; Split Layout</h3></div>
+            <div class="form-panel-body">
+              <div class="field-group">
+                <label class="field-label">Layout Ratio</label>
+                <select id="split-layout-ratio" class="form-input">
+                  <option value="1:1">2 Columns (50% / 50%)</option>
+                  <option value="1:2">2 Columns (33% / 67%)</option>
+                  <option value="2:1">2 Columns (67% / 33%)</option>
+                  <option value="1:1:1">3 Columns (Equal)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video Options -->
+          <div id="panel-vid" class="form-panel" style="display:none;">
+            <div class="form-panel-header"><h3>&#9654; Video Options</h3></div>
+            <div class="form-panel-body">
+              <div class="field-group">
+                <label class="field-label">YouTube Embed URL</label>
+                <input type="text" id="vid-url" class="field-input" placeholder="https://www.youtube.com/embed/..." style="margin-bottom:8px;" />
+                <button class="btn btn-outline" id="btn-set-vid" style="width:100%;">Apply Video</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../js/admin.js"></script>
+<script src="../js/cms-db.js"></script>
+<script src="../js/cms-admin.js"></script>
+</body>
+</html>
+
