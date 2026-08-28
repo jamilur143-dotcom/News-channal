@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Social Bar/Popunder Script (Header/Footer Injection)
     if (adPopunderCode && adPopunderCode.trim() !== '') {
+        const adContainer = document.getElementById('ad-settings-container') || document.body;
         const temp = document.createElement('div');
         temp.innerHTML = adPopunderCode;
         Array.from(temp.childNodes).forEach(node => {
@@ -69,9 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const script = document.createElement('script');
                 Array.from(node.attributes).forEach(attr => script.setAttribute(attr.name, attr.value));
                 script.text = node.textContent;
-                document.body.appendChild(script);
+                adContainer.appendChild(script);
             } else {
-                document.body.appendChild(node.cloneNode(true));
+                adContainer.appendChild(node.cloneNode(true));
             }
         });
     }
