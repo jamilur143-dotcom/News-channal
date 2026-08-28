@@ -77,7 +77,7 @@
         Array.from(temp.childNodes).forEach(node => {
             if (node.tagName && node.tagName.toLowerCase() === 'script') {
                 const script = document.createElement('script');
-                if (node.src) script.src = node.src;
+                Array.from(node.attributes).forEach(attr => script.setAttribute(attr.name, attr.value));
                 script.text = node.textContent;
                 document.body.appendChild(script);
             } else {
@@ -105,7 +105,7 @@
             // Re-evaluate scripts in the banner if any
             Array.from(adWrapper.querySelectorAll('script')).forEach(oldScript => {
                 const newScript = document.createElement('script');
-                if (oldScript.src) newScript.src = oldScript.src;
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
                 newScript.text = oldScript.textContent;
                 oldScript.replaceWith(newScript);
             });
