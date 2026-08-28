@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
     
     // --- AD SETTINGS LOGIC ---
     const adBannerInput = document.getElementById('global-ad-banner');
@@ -134,6 +134,30 @@
         });
     }
 
+    // --- CLOUDINARY CONFIGURATION & UPLOAD HELPER ---
+    const CLOUDINARY_CLOUD_NAME = 'xlzab0vf';
+    const CLOUDINARY_UPLOAD_PRESET = 'l1wscesh';
+
+    async function uploadToCloudinary(file) {
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error?.message || 'Cloudinary upload failed');
+        }
+
+        const data = await response.json();
+        return data.secure_url;
+    }
+
     // --- 1. HERO IMAGE LOGIC ---
     if(defaultHero && defaultHeroInput) {
         defaultHero.addEventListener('click', (e) => {
@@ -141,17 +165,24 @@
             if(e.target.closest('#default-title') || e.target.closest('.meta-data') || e.target.closest('#default-content')) return;
             if(e.target !== defaultHeroInput) defaultHeroInput.click();
         });
-        defaultHeroInput.addEventListener('change', function() {
+        defaultHeroInput.addEventListener('change', async function() {
             const file = this.files[0];
             if(file) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    defaultHeroImg.src = e.target.result;
-                    defaultHeroImg.style.display = 'block';
-                    if(defaultHeroPh) defaultHeroPh.style.display = 'none';
-                    if(defaultHeroOverlay) defaultHeroOverlay.style.display = 'none';
+                // Instant local preview
+                const tempUrl = URL.createObjectURL(file);
+                defaultHeroImg.src = tempUrl;
+                defaultHeroImg.style.display = 'block';
+                if(defaultHeroPh) defaultHeroPh.style.display = 'none';
+                if(defaultHeroOverlay) defaultHeroOverlay.style.display = 'none';
+
+                try {
+                    const cdnUrl = await uploadToCloudinary(file);
+                    defaultHeroImg.src = cdnUrl;
+                    console.log('Hero image successfully uploaded to Cloudinary:', cdnUrl);
+                } catch (err) {
+                    console.error('Cloudinary upload error:', err);
+                    alert('Cloudinary Upload Failed: ' + err.message);
                 }
-                reader.readAsDataURL(file);
             }
         });
     }
@@ -164,10 +195,6 @@
     });
 
     if(dropzone) {
-        document.addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
-
         let lastTarget = null;
         document.getElementById('main-canvas').addEventListener('dragover', (e) => { 
             e.preventDefault(); 
@@ -330,16 +357,23 @@
                 ph.addEventListener('click', () => fileInput.click());
                 imgEl.addEventListener('click', () => fileInput.click()); 
                 
-                fileInput.addEventListener('change', function() {
+                fileInput.addEventListener('change', async function() {
                     const file = this.files[0];
                     if(file) {
-                        const reader = new FileReader();
-                        reader.onload = e => {
-                            imgEl.src = e.target.result;
-                            imgEl.style.display = 'block';
-                            ph.style.display = 'none';
+                        // Instant local preview
+                        const tempUrl = URL.createObjectURL(file);
+                        imgEl.src = tempUrl;
+                        imgEl.style.display = 'block';
+                        ph.style.display = 'none';
+
+                        try {
+                            const cdnUrl = await uploadToCloudinary(file);
+                            imgEl.src = cdnUrl;
+                            console.log('Block image uploaded to Cloudinary:', cdnUrl);
+                        } catch (err) {
+                            console.error('Cloudinary upload error:', err);
+                            alert('Cloudinary Upload Failed: ' + err.message);
                         }
-                        reader.readAsDataURL(file);
                     }
                 });
             }
