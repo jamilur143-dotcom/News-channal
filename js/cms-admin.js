@@ -297,24 +297,25 @@ document.addEventListener('DOMContentLoaded', () => {
             if(e.target.closest('#default-title') || e.target.closest('.meta-data') || e.target.closest('#default-content')) return;
             if(e.target !== defaultHeroInput) defaultHeroInput.click();
         });
-        defaultHeroInput.addEventListener('change', async function() {
+        defaultHeroInput.addEventListener('change', function() {
             const file = this.files[0];
             if(file) {
-                // Instant local preview
-                const tempUrl = URL.createObjectURL(file);
-                defaultHeroImg.src = tempUrl;
-                defaultHeroImg.style.display = 'block';
-                if(defaultHeroPh) defaultHeroPh.style.display = 'none';
-                if(defaultHeroOverlay) defaultHeroOverlay.style.display = 'none';
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    defaultHeroImg.src = e.target.result;
+                    defaultHeroImg.style.display = 'block';
+                    if(defaultHeroPh) defaultHeroPh.style.display = 'none';
+                    if(defaultHeroOverlay) defaultHeroOverlay.style.display = 'none';
 
-                try {
-                    const cdnUrl = await uploadToCloudinary(file);
-                    defaultHeroImg.src = cdnUrl;
-                    console.log('Hero image successfully uploaded to Cloudinary:', cdnUrl);
-                } catch (err) {
-                    console.error('Cloudinary upload error:', err);
-                    alert('Cloudinary Upload Failed: ' + err.message);
-                }
+                    try {
+                        const cdnUrl = await uploadToCloudinary(file);
+                        defaultHeroImg.src = cdnUrl;
+                        console.log('Hero image successfully uploaded to Cloudinary:', cdnUrl);
+                    } catch (err) {
+                        console.error('Cloudinary upload error, using local fallback:', err);
+                    }
+                };
+                reader.readAsDataURL(file);
             }
         });
     }
@@ -807,6 +808,21 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Clean up admin-only UI elements
             canvasClone.querySelectorAll('.remove-ad, .move-ad-left, .move-ad-right, .block-del, .drop-hint, .hero-subject-placeholder, #default-hero-overlay, .hidden-file-input, .t9-bg-upload-btn').forEach(el => el.remove());
+
+            // Ensure hero image is explicitly styled and displayed on the published clone
+            const clonedHeroImg = canvasClone.querySelector('#default-hero-img, .hero-media img');
+            if (clonedHeroImg) {
+                if (defaultHeroImg && defaultHeroImg.src && defaultHeroImg.style.display !== 'none') {
+                    clonedHeroImg.src = defaultHeroImg.src;
+                    clonedHeroImg.style.display = 'block';
+                    clonedHeroImg.style.position = 'absolute';
+                    clonedHeroImg.style.top = '0';
+                    clonedHeroImg.style.left = '0';
+                    clonedHeroImg.style.width = '100%';
+                    clonedHeroImg.style.height = '100%';
+                    clonedHeroImg.style.objectFit = 'cover';
+                }
+            }
             
             // Remove contenteditable attributes and admin classes
             canvasClone.querySelectorAll('[contenteditable]').forEach(el => {

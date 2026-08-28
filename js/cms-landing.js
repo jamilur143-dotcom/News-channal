@@ -34,6 +34,28 @@
         if (article.fullHTML) {
             // New rendering logic: exact copy of admin canvas
             contentContainer.innerHTML = article.fullHTML;
+            
+            // Ensure hero media container and image are properly rendered
+            const heroImg = contentContainer.querySelector('#default-hero-img, .hero-media img');
+            if (heroImg) {
+                if (!heroImg.src && article.media) {
+                    heroImg.src = article.media;
+                }
+                if (heroImg.src && !heroImg.src.endsWith('/') && !heroImg.src.endsWith('.html')) {
+                    heroImg.style.display = 'block';
+                    heroImg.style.position = 'absolute';
+                    heroImg.style.top = '0';
+                    heroImg.style.left = '0';
+                    heroImg.style.width = '100%';
+                    heroImg.style.height = '100%';
+                    heroImg.style.objectFit = 'cover';
+                }
+            } else if (article.media) {
+                const heroMedia = contentContainer.querySelector('.hero-media');
+                if (heroMedia) {
+                    heroMedia.innerHTML = `<img src="${article.media}" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; display:block;" />`;
+                }
+            }
         } else {
             // Fallback for old articles
             contentContainer.innerHTML = `
