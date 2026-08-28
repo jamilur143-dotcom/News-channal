@@ -86,32 +86,109 @@
         });
     }
 
-    // 2. Middle Paragraph Banner Ad
+            // 2. Banner Ad Injection (Fills both Dragged Ad Blocks & Middle of Article)
+    const manualAdBlocks = contentContainer.querySelectorAll('.ad-inline, .ad-square, .ad-horizontal, .ad-vertical');
+    
     if (adBannerCode && adBannerCode.trim() !== '') {
-        // Find paragraphs within the content container
-        const paragraphs = Array.from(contentContainer.querySelectorAll('.article-text, p')).filter(p => p.textContent.trim().length > 20);
-        if (paragraphs.length > 0) {
-            const middleIndex = Math.floor(paragraphs.length / 2);
-            const targetNode = paragraphs[middleIndex];
-            
-            const adWrapper = document.createElement('div');
-            adWrapper.className = 'in-content-ad';
-            adWrapper.style.margin = '32px auto';
-            adWrapper.style.textAlign = 'center';
-            adWrapper.style.display = 'flex';
-            adWrapper.style.justifyContent = 'center';
-            adWrapper.innerHTML = adBannerCode;
+        let injectedManually = false;
+        
+        manualAdBlocks.forEach(adBlock => {
+            adBlock.innerHTML = ''; // clear placeholder text
+            adBlock.style.border = 'none';
+            adBlock.style.background = 'transparent';
+            adBlock.innerHTML = adBannerCode;
             
             // Re-evaluate scripts in the banner if any
-            Array.from(adWrapper.querySelectorAll('script')).forEach(oldScript => {
+            Array.from(adBlock.querySelectorAll('script')).forEach(oldScript => {
                 const newScript = document.createElement('script');
                 Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
                 newScript.text = oldScript.textContent;
                 oldScript.replaceWith(newScript);
             });
+            injectedManually = true;
+        });
 
-            targetNode.parentNode.insertBefore(adWrapper, targetNode.nextSibling);
+        // B) If they didn't drag any manual ad blocks, automatically inject one in the middle of the article
+        if (!injectedManually) {
+            const paragraphs = Array.from(contentContainer.querySelectorAll('.article-text, p')).filter(p => p.textContent.trim().length > 20);
+            if (paragraphs.length > 0) {
+                const middleIndex = Math.floor(paragraphs.length / 2);
+                const targetNode = paragraphs[middleIndex];
+                
+                const adWrapper = document.createElement('div');
+                adWrapper.className = 'in-content-ad';
+                adWrapper.style.margin = '32px auto';
+                adWrapper.style.textAlign = 'center';
+                adWrapper.style.display = 'flex';
+                adWrapper.style.justifyContent = 'center';
+                adWrapper.innerHTML = adBannerCode;
+                
+                // Re-evaluate scripts
+                Array.from(adWrapper.querySelectorAll('script')).forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.text = oldScript.textContent;
+                    oldScript.replaceWith(newScript);
+                });
+
+                targetNode.parentNode.insertBefore(adWrapper, targetNode.nextSibling);
+            }
         }
+    } else {
+        // No Banner Code provided: Remove all empty ad placeholders from the live page so they don't show dummy text
+        manualAdBlocks.forEach(adBlock => adBlock.remove());
+    }
+
+    
+    if (adBannerCode && adBannerCode.trim() !== '') {
+        // A) Fill all dragged ad placeholders (ad-inline, ad-square, ad-horizontal)
+        const manualAdBlocks = contentContainer.querySelectorAll('.ad-inline, .ad-square, .ad-horizontal, .ad-vertical');
+        let injectedManually = false;
+        
+        manualAdBlocks.forEach(adBlock => {
+            adBlock.innerHTML = ''; // clear placeholder text
+            adBlock.style.border = 'none';
+            adBlock.style.background = 'transparent';
+            adBlock.innerHTML = adBannerCode;
+            
+            // Re-evaluate scripts in the banner if any
+            Array.from(adBlock.querySelectorAll('script')).forEach(oldScript => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.text = oldScript.textContent;
+                oldScript.replaceWith(newScript);
+            });
+            injectedManually = true;
+        });
+
+        // B) If they didn't drag any manual ad blocks, automatically inject one in the middle of the article
+        if (!injectedManually) {
+            const paragraphs = Array.from(contentContainer.querySelectorAll('.article-text, p')).filter(p => p.textContent.trim().length > 20);
+            if (paragraphs.length > 0) {
+                const middleIndex = Math.floor(paragraphs.length / 2);
+                const targetNode = paragraphs[middleIndex];
+                
+                const adWrapper = document.createElement('div');
+                adWrapper.className = 'in-content-ad';
+                adWrapper.style.margin = '32px auto';
+                adWrapper.style.textAlign = 'center';
+                adWrapper.style.display = 'flex';
+                adWrapper.style.justifyContent = 'center';
+                adWrapper.innerHTML = adBannerCode;
+                
+                // Re-evaluate scripts
+                Array.from(adWrapper.querySelectorAll('script')).forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.text = oldScript.textContent;
+                    oldScript.replaceWith(newScript);
+                });
+
+                targetNode.parentNode.insertBefore(adWrapper, targetNode.nextSibling);
+            }
+        }
+    }
+}
     }
 });
 
