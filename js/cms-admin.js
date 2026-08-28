@@ -46,13 +46,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const canvas = document.getElementById('main-canvas');
             
             // 1) RESET FIRST: Move elements back to their standard (Template 1) container order
-            canvas.classList.remove('template-2', 'template-3', 'template-4', 'template-5', 'template-6', 'template-7', 'template-8');
+            canvas.classList.remove('template-2', 'template-3', 'template-4', 'template-5', 'template-6', 'template-7', 'template-8', 'template-9');
             
             if(articleContainer && defaultTitle && metaContainer && defaultContent) {
                 // Ensure they are inside article-container 
                 articleContainer.prepend(defaultContent);
                 articleContainer.prepend(metaContainer);
                 articleContainer.prepend(defaultTitle);
+                if(dropzone) articleContainer.appendChild(dropzone);
                 // Standard T1 Order: Title -> Meta -> Content
                 defaultTitle.after(metaContainer); 
                 metaContainer.after(defaultContent);
@@ -63,9 +64,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 else canvas.insertBefore(defaultHero, canvas.firstChild);
             }
 
-            // Cleanup any temporary wrapper from T8
+            // Cleanup any temporary wrapper from T8 & T9
             const oldT8Split = document.getElementById('t8-split-wrap');
             if(oldT8Split) oldT8Split.remove();
+            const oldT9Header = document.getElementById('t9-header-banner');
+            if(oldT9Header) oldT9Header.remove();
+            const oldT9Grid = document.getElementById('t9-content-grid');
+            if(oldT9Grid) oldT9Grid.remove();
 
             // 2) APPLY NEW TEMPLATE LAYOUT
             const val = e.target.value;
@@ -129,6 +134,70 @@ document.addEventListener('DOMContentLoaded', () => {
                     textWrap.appendChild(defaultTitle);
                     textWrap.appendChild(defaultContent);
                     imgWrap.appendChild(defaultHero);
+                }
+            } else if (val === 'template9') {
+                // Template 9: Magazine Editorial (Editor's Note)
+                canvas.classList.add('template-9');
+
+                // 1. Build Header Banner
+                const headerBanner = document.createElement('div');
+                headerBanner.id = 't9-header-banner';
+                headerBanner.className = 't9-header-banner';
+
+                const headerLeft = document.createElement('div');
+                headerLeft.className = 't9-header-left';
+                
+                const badge = document.createElement('span');
+                badge.className = 't9-badge';
+                badge.textContent = 'EDITORIAL';
+                headerLeft.appendChild(badge);
+
+                if(defaultTitle) {
+                    headerLeft.appendChild(defaultTitle);
+                }
+
+                const authorCol = document.createElement('div');
+                authorCol.className = 't9-author-col';
+                if(defaultHero) {
+                    authorCol.appendChild(defaultHero);
+                }
+
+                headerBanner.appendChild(headerLeft);
+                headerBanner.appendChild(authorCol);
+
+                const topAd = document.getElementById('ad-top');
+                if(topAd) topAd.after(headerBanner);
+                else canvas.insertBefore(headerBanner, canvas.firstChild);
+
+                // 2. Build 2-Column Body (Left: Content & Dropzone, Right: Quote Card)
+                const contentGrid = document.createElement('div');
+                contentGrid.id = 't9-content-grid';
+                contentGrid.className = 't9-content-grid';
+
+                const leftCol = document.createElement('div');
+                leftCol.className = 't9-left-col';
+
+                if(defaultContent) leftCol.appendChild(defaultContent);
+                if(dropzone) leftCol.appendChild(dropzone);
+
+                const rightCol = document.createElement('div');
+                rightCol.className = 't9-right-col';
+                
+                const quoteCard = document.createElement('div');
+                quoteCard.className = 't9-quote-card';
+                quoteCard.innerHTML = `
+                    <span class="t9-quote-mark">&#10077;</span>
+                    <div contenteditable="true" class="t9-quote-text edit-text" placeholder="Type key takeaway or editor's highlight quote here...">
+                        Inspiring journalism connecting communities with integrity and purpose.
+                    </div>
+                `;
+                rightCol.appendChild(quoteCard);
+
+                contentGrid.appendChild(leftCol);
+                contentGrid.appendChild(rightCol);
+
+                if(articleContainer) {
+                    articleContainer.appendChild(contentGrid);
                 }
             }
         });
