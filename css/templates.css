@@ -82,7 +82,7 @@
        TEMPLATE 2: Standard Article (Title First)
        ==========================================
     */
-    .visual-canvas.template-2 .article-layout-wrapper { padding-top: 60px; }
+    .visual-canvas.template-2 .article-layout-wrapper { padding-top: 0px; }
     .visual-canvas.template-2 #default-title { text-align: center; }
     .visual-canvas.template-2 .meta-data { justify-content: center; border-bottom: none; margin-bottom: 30px; padding-bottom: 0; }
     .visual-canvas.template-2 .hero-media { 
