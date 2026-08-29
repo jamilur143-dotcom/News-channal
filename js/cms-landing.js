@@ -75,9 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const adBannerCode = localStorage.getItem('adBannerCode');
     const adPopunderCode = localStorage.getItem('adPopunderCode');
 
-    // 1. Social Bar/Popunder Script (Header/Footer Injection)
+    // 1. Social Bar/Popunder Script (Global Body Injection)
     if (adPopunderCode && adPopunderCode.trim() !== '') {
-        const adContainer = document.getElementById('ad-settings-container') || document.body;
         const temp = document.createElement('div');
         temp.innerHTML = adPopunderCode;
         Array.from(temp.childNodes).forEach(node => {
@@ -85,9 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const script = document.createElement('script');
                 Array.from(node.attributes).forEach(attr => script.setAttribute(attr.name, attr.value));
                 script.text = node.textContent;
-                adContainer.appendChild(script);
+                document.body.appendChild(script);
             } else {
-                adContainer.appendChild(node.cloneNode(true));
+                document.body.appendChild(node.cloneNode(true));
             }
         });
     }
