@@ -1,18 +1,33 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     
-    // --- AD SETTINGS LOGIC ---
+    // --- AD SETTINGS LOGIC (Cloud Synced) ---
     const adBannerInput = document.getElementById('global-ad-banner');
     const adScriptInput = document.getElementById('global-ad-script');
     const saveAdsBtn = document.getElementById('btn-save-ads');
 
     if (adBannerInput && adScriptInput && saveAdsBtn) {
+        // Load initial from local then sync with Cloud Firestore
         adBannerInput.value = localStorage.getItem('adBannerCode') || '';
         adScriptInput.value = localStorage.getItem('adPopunderCode') || '';
+        
+        getAdSettingsAsync().then(config => {
+            if (config.bannerCode) adBannerInput.value = config.bannerCode;
+            if (config.popunderCode) adScriptInput.value = config.popunderCode;
+        });
 
-        saveAdsBtn.addEventListener('click', () => {
-            localStorage.setItem('adBannerCode', adBannerInput.value);
-            localStorage.setItem('adPopunderCode', adScriptInput.value);
-            alert('Ad settings saved successfully!');
+        saveAdsBtn.addEventListener('click', async () => {
+            saveAdsBtn.disabled = true;
+            saveAdsBtn.textContent = 'Saving to Cloud...';
+            try {
+                await saveAdSettingsAsync(adBannerInput.value, adScriptInput.value);
+                saveAdsBtn.disabled = false;
+                saveAdsBtn.textContent = 'Save Changes';
+                alert('Ad settings saved globally to Cloud successfully! Ads will now show for all visitors worldwide.');
+            } catch (e) {
+                saveAdsBtn.disabled = false;
+                saveAdsBtn.textContent = 'Save Changes';
+                alert('Saved locally. (Cloud Sync Notice: ' + e.message + ')');
+            }
         });
     }
 

@@ -95,9 +95,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- AD INJECTION SYSTEM ---
-    const adBannerCode = localStorage.getItem('adBannerCode');
-    const adPopunderCode = localStorage.getItem('adPopunderCode');
+    // --- AD INJECTION SYSTEM (Cloud Synced) ---
+    const adSettings = await getAdSettingsAsync();
+    const adBannerCode = adSettings.bannerCode || localStorage.getItem('adBannerCode');
+    const adPopunderCode = adSettings.popunderCode || localStorage.getItem('adPopunderCode');
 
     // 1. Social Bar/Popunder Script (Global Body Injection)
     if (adPopunderCode && adPopunderCode.trim() !== '') {

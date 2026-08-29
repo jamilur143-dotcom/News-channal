@@ -195,3 +195,51 @@ async function deleteArticle(id) {
   }
 }
 
+// Global Cloud Ad Settings (Synced across all users and browsers)
+async function getAdSettingsAsync() {
+  const localBanner = localStorage.getItem('adBannerCode') || '';
+  const localPopunder = localStorage.getItem('adPopunderCode') || '';
+
+  const firestore = getFirestoreDb();
+  if (firestore) {
+    try {
+      const doc = await firestore.collection('nexus_settings').doc('ad_config').get();
+      if (doc.exists) {
+        const data = doc.data();
+        if (data.bannerCode !== undefined) localStorage.setItem('adBannerCode', data.bannerCode);
+        if (data.popunderCode !== undefined) localStorage.setItem('adPopunderCode', data.popunderCode);
+        return {
+          bannerCode: data.bannerCode || '',
+          popunderCode: data.popunderCode || ''
+        };
+      }
+    } catch (e) {
+      console.warn("Firestore ad settings fetch error:", e);
+    }
+  }
+  return { bannerCode: localBanner, popunderCode: localPopunder };
+}
+
+async function saveAdSettingsAsync(bannerCode, popunderCode) {
+  localStorage.setItem('adBannerCode', bannerCode);
+  localStorage.setItem('adPopunderCode', popunderCode);
+
+  const firestore = getFirestoreDb();
+  if (firestore) {
+    try {
+      await firestore.collection('nexus_settings').doc('ad_config').set({
+        bannerCode: bannerCode || '',
+        popunderCode: popunderCode || '',
+        updatedAt: new Date().toISOString()
+      });
+      console.log("Ad settings saved to Firestore cloud successfully.");
+      return true;
+    } catch (e) {
+      console.error("Failed to save ad settings to Firestore:", e);
+      throw e;
+    }
+  }
+  return false;
+}
+
+

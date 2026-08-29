@@ -315,6 +315,9 @@
 
 
     @media(max-width: 768px) {
+        .article-layout-wrapper { flex-direction: column !important; padding: 24px 16px 60px !important; gap: 24px !important; }
+        .article-sidebar { width: 100% !important; margin: 0 auto; }
+        .ad-horizontal { width: 100% !important; height: auto !important; min-height: 90px; }
         .visual-canvas.template-4 #default-content { column-count: 1; }
         .visual-canvas.template-4 .meta-data { grid-template-columns: 1fr; }
         .visual-canvas.template-6 { padding-left: 0; }
@@ -324,6 +327,7 @@
         .t8-hero-split { flex-direction: column-reverse; gap: 30px; border-bottom: none; }
         .visual-canvas.template-8 .hero-media { min-height: 300px; aspect-ratio: 4/3; }
         .t8-text-col { padding-bottom: 40px; border-bottom: 1px solid #111; }
+        #default-title { font-size: clamp(1.8rem, 6vw, 2.4rem) !important; }
     }
 
 

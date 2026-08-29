@@ -89,9 +89,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         gridContainer.innerHTML = gridHtml;
     }
-    /* ── Inject Adsterra Ads ───────────────────────────────── */
-    const adBannerCode = localStorage.getItem('adBannerCode');
-    const adPopunderCode = localStorage.getItem('adPopunderCode');
+    /* ── Inject Adsterra Ads (Cloud Synced) ─────────────────── */
+    const adSettings = await getAdSettingsAsync();
+    const adBannerCode = adSettings.bannerCode || localStorage.getItem('adBannerCode');
+    const adPopunderCode = adSettings.popunderCode || localStorage.getItem('adPopunderCode');
 
     // 1. Inject Popunder / Social Bar Script
     if (adPopunderCode && adPopunderCode.trim() !== '') {
