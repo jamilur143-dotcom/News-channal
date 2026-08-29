@@ -835,15 +835,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
             }
-
-            // === NEW LOGIC: Extract entire fully-designed Canvas ===
+            // Canvas Clone preparation
             const canvasClone = document.getElementById('main-canvas').cloneNode(true);
-            canvasClone.removeAttribute('id'); // don't conflict IDs on landing page
-            
-            // Clean up admin-only UI elements
             canvasClone.querySelectorAll('.remove-ad, .move-ad-left, .move-ad-right, .block-del, .drop-hint, .hero-subject-placeholder, #default-hero-overlay, .hidden-file-input, .t9-bg-upload-btn').forEach(el => el.remove());
 
-            // Make sure sidebar ad stays active in layout if enabled in admin
             const adminSidebar = document.getElementById('ad-sidebar');
             const clonedSidebar = canvasClone.querySelector('#ad-sidebar, .ad-vertical');
             if (adminSidebar && adminSidebar.style.display !== 'none' && clonedSidebar) {
@@ -858,45 +853,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (sidebarParent) sidebarParent.classList.remove('active');
             }
 
-            // Ensure hero image is explicitly styled and displayed on the published clone
-            const clonedHeroImg = canvasClone.querySelector('#default-hero-img, .hero-media img');
-            if (clonedHeroImg) {
-                if (defaultHeroImg && defaultHeroImg.src && defaultHeroImg.style.display !== 'none') {
-                    clonedHeroImg.src = defaultHeroImg.src;
-                    clonedHeroImg.style.display = 'block';
-                    clonedHeroImg.style.position = 'absolute';
-                    clonedHeroImg.style.top = '0';
-                    clonedHeroImg.style.left = '0';
-                    clonedHeroImg.style.width = '100%';
-                    clonedHeroImg.style.height = '100%';
-                    clonedHeroImg.style.objectFit = 'cover';
-                }
-            }
-            
-            // Remove contenteditable attributes and admin classes
             canvasClone.querySelectorAll('[contenteditable]').forEach(el => {
                 el.removeAttribute('contenteditable');
                 el.removeAttribute('placeholder');
                 el.classList.remove('edit-text', 'edit-p', 'active');
             });
-            
-            // Format dropped blocks seamlessly
+
             canvasClone.querySelectorAll('.inner-dropzone').forEach(el => { el.style.border = 'none'; el.style.minHeight = '0'; el.classList.remove('inner-dropzone'); });
             canvasClone.querySelectorAll('.canvas-block').forEach(el => {
                 el.classList.remove('canvas-block', 'active');
                 if (el.dataset.type === 'p') {
-                    const inner = el.querySelector('div[data-type="text"]');
-                    if (inner) {
-                        inner.classList.add('article-text');
-                        el.replaceWith(inner); 
-                    }
+                    const p = el.querySelector('.edit-p');
+                    if(p) el.replaceWith(p);
+                    else el.remove();
                 } else if (el.dataset.type === 'img') {
                     const img = el.querySelector('img');
                     if(img && img.style.display !== 'none') {
                         img.removeAttribute('style');
                         el.innerHTML = `<figure class="article-media" style="margin:24px 0;"><img src="${img.src}" style="width:100%; border-radius:4px;"/></figure>`;
                     } else { el.remove(); }
-                } else if (el.dataset.type === 'split') { const container = el.querySelector('.split-container'); if (container) { el.replaceWith(container); } } else if (el.dataset.type === 'vid') {
+                } else if (el.dataset.type === 'vid') {
                     const iframe = el.querySelector('iframe');
                     if(iframe && iframe.style.display !== 'none') {
                         iframe.removeAttribute('style');
@@ -940,7 +916,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const successCard = document.getElementById('publish-success-card');
                 const viewLiveBtn = document.getElementById('view-live-btn');
                 const statusText = document.getElementById('publish-status-text');
+                const copyShortBtn = document.getElementById('copy-short-btn');
                 
+                const fullArticleUrl = window.location.origin + window.location.pathname.replace('/admin/index.html', '/landing.html').replace('/admin/', '/landing.html') + '?id=' + article.id;
+
                 if(successCard && viewLiveBtn && statusText) {
                     successCard.style.background = '#f0fdf4';
                     successCard.style.border = '1px solid #bbf7d0';
@@ -951,7 +930,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                     statusText.style.marginBottom = '12px';
                     statusText.style.fontSize = '0.85rem';
                     viewLiveBtn.style.display = 'block';
-                    viewLiveBtn.href = '../landing.html?id=' + article.id;
+                    viewLiveBtn.href = fullArticleUrl;
+
+                    if (copyShortBtn) {
+                        copyShortBtn.style.display = 'block';
+                        copyShortBtn.textContent = '🔗 Copy Short Link';
+                        copyShortBtn.onclick = async () => {
+                            copyShortBtn.textContent = 'Generating...';
+                            const shortUrl = await generateShortUrl(fullArticleUrl);
+                            try {
+                                await navigator.clipboard.writeText(shortUrl);
+                                copyShortBtn.textContent = '✓ Short Link Copied!';
+                            } catch (e) {
+                                prompt('Copy your short link:', shortUrl);
+                                copyShortBtn.textContent = '🔗 Copy Short Link';
+                            }
+                            setTimeout(() => { copyShortBtn.textContent = '🔗 Copy Short Link'; }, 2500);
+                        };
+                    }
                 }
             } catch (err) {
                 console.error("Publish Error:", err);
@@ -1007,7 +1003,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Use placeholder if no media
             let imgHtml = art.media ? `<img src="${art.media}" class="m-card-img" />` : `<div class="m-card-img" style="display:flex;align-items:center;justify-content:center;font-size:3rem;">📰</div>`;
-            
+            const fullArticleUrl = window.location.origin + window.location.pathname.replace('/admin/index.html', '/landing.html').replace('/admin/', '/landing.html') + '?id=' + art.id;
+
             html += `
                 <div class="m-card" data-id="${art.id}">
                     <span class="m-status-badge">Published</span>
@@ -1017,7 +1014,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h3 class="m-card-title">${art.title || 'Untitled Article'}</h3>
                         <div class="m-card-date">🕒 ${dateStr}</div>
                         <div class="m-card-actions">
-                            <a href="../landing.html?id=${art.id}" target="_blank" class="m-btn m-btn-view">👁️ View</a>
+                            <a href="${fullArticleUrl}" target="_blank" class="m-btn m-btn-view">👁️ View</a>
+                            <button class="m-btn m-btn-short" onclick="copyArticleShortLink('${fullArticleUrl}', this)">🔗 Short</button>
                             <button class="m-btn m-btn-edit" onclick="editArticle('${art.id}')">✏️ Edit</button>
                             <button class="m-btn m-btn-delete" onclick="removeArticle('${art.id}')">🗑️ Delete</button>
                         </div>
@@ -1028,6 +1026,27 @@ document.addEventListener('DOMContentLoaded', () => {
         html += '</div>';
         manageBody.innerHTML = html;
     }
+
+    window.copyArticleShortLink = async function(longUrl, btn) {
+        const origText = btn.textContent;
+        btn.textContent = '...';
+        btn.disabled = true;
+        try {
+            const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+            let shortUrl = longUrl;
+            if (res.ok) {
+                const text = await res.text();
+                if (text && text.startsWith('http')) shortUrl = text.trim();
+            }
+            await navigator.clipboard.writeText(shortUrl);
+            btn.textContent = '✓ Copied!';
+        } catch (e) {
+            prompt('Copy your short link:', longUrl);
+            btn.textContent = '🔗 Short';
+        }
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = origText; }, 2000);
+    };
 
     window.removeArticle = async function(id) {
         if(confirm('Are you sure you want to permanently delete this article? This action cannot be undone.')) {
