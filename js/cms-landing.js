@@ -79,24 +79,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Banner Ad Injection (Fills both Dragged Ad Blocks & Middle of Article)
     if (contentContainer) {
-        const manualAdBlocks = contentContainer.querySelectorAll('.ad-inline, .ad-square, .ad-horizontal, .ad-vertical');
+        const manualAdBlocks = contentContainer.querySelectorAll('.ad-inline, .ad-square, .ad-horizontal, .ad-vertical, [data-type="ad"]');
         
+        function renderAdInContainer(container) {
+            container.innerHTML = '';
+            container.style.border = 'none';
+            container.style.background = 'transparent';
+            container.style.margin = '28px auto';
+            container.style.display = 'flex';
+            container.style.justifyContent = 'center';
+            container.style.alignItems = 'center';
+            container.style.width = '100%';
+            
+            // Create clean isolated iframe to guarantee native / third-party script execution
+            const iframe = document.createElement('iframe');
+            iframe.style.width = '100%';
+            iframe.style.border = 'none';
+            iframe.style.overflow = 'hidden';
+            iframe.style.minHeight = '270px';
+            iframe.scrolling = 'no';
+            container.appendChild(iframe);
+            
+            const doc = iframe.contentWindow || iframe.contentDocument.document || iframe.contentDocument;
+            doc.document.open();
+            doc.document.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;display:flex;justify-content:center;align-items:center;background:transparent;overflow:hidden;}</style></head><body>${adBannerCode}</body></html>`);
+            doc.document.close();
+        }
+
         if (adBannerCode && adBannerCode.trim() !== '') {
             let injectedManually = false;
             
             manualAdBlocks.forEach(adBlock => {
-                adBlock.innerHTML = ''; // clear placeholder text
-                adBlock.style.border = 'none';
-                adBlock.style.background = 'transparent';
-                adBlock.innerHTML = adBannerCode;
-                
-                // Re-evaluate scripts in the banner if any
-                Array.from(adBlock.querySelectorAll('script')).forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                    newScript.text = oldScript.textContent;
-                    oldScript.replaceWith(newScript);
-                });
+                renderAdInContainer(adBlock);
                 injectedManually = true;
             });
 
@@ -109,19 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     const adWrapper = document.createElement('div');
                     adWrapper.className = 'in-content-ad';
-                    adWrapper.style.margin = '32px auto';
-                    adWrapper.style.textAlign = 'center';
-                    adWrapper.style.display = 'flex';
-                    adWrapper.style.justifyContent = 'center';
-                    adWrapper.innerHTML = adBannerCode;
-                    
-                    // Re-evaluate scripts
-                    Array.from(adWrapper.querySelectorAll('script')).forEach(oldScript => {
-                        const newScript = document.createElement('script');
-                        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                        newScript.text = oldScript.textContent;
-                        oldScript.replaceWith(newScript);
-                    });
+                    renderAdInContainer(adWrapper);
 
                     targetNode.parentNode.insertBefore(adWrapper, targetNode.nextSibling);
                 }
