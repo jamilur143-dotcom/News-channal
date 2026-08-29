@@ -872,7 +872,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         img.removeAttribute('style');
                         el.innerHTML = `<figure class="article-media" style="margin:24px 0;"><img src="${img.src}" style="width:100%; border-radius:4px;"/></figure>`;
                     } else { el.remove(); }
-                } else if (el.dataset.type === 'vid') {
+                } else if (el.dataset.type === 'split') { const container = el.querySelector('.split-container'); if (container) { el.replaceWith(container); } } else if (el.dataset.type === 'vid') {
                     const iframe = el.querySelector('iframe');
                     if(iframe && iframe.style.display !== 'none') {
                         iframe.removeAttribute('style');
@@ -918,7 +918,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const statusText = document.getElementById('publish-status-text');
                 const copyShortBtn = document.getElementById('copy-short-btn');
                 
-                const fullArticleUrl = window.location.origin + window.location.pathname.replace('/admin/index.html', '/landing.html').replace('/admin/', '/landing.html') + '?id=' + article.id;
+                const fullArticleUrl = getArticleLandingUrl(article.id);
 
                 if(successCard && viewLiveBtn && statusText) {
                     successCard.style.background = '#f0fdf4';
@@ -1003,7 +1003,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Use placeholder if no media
             let imgHtml = art.media ? `<img src="${art.media}" class="m-card-img" />` : `<div class="m-card-img" style="display:flex;align-items:center;justify-content:center;font-size:3rem;">📰</div>`;
-            const fullArticleUrl = window.location.origin + window.location.pathname.replace('/admin/index.html', '/landing.html').replace('/admin/', '/landing.html') + '?id=' + art.id;
+            const fullArticleUrl = getArticleLandingUrl(art.id);
 
             html += `
                 <div class="m-card" data-id="${art.id}">
@@ -1032,12 +1032,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.textContent = '...';
         btn.disabled = true;
         try {
-            const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
-            let shortUrl = longUrl;
-            if (res.ok) {
-                const text = await res.text();
-                if (text && text.startsWith('http')) shortUrl = text.trim();
-            }
+            const shortUrl = await generateShortUrl(longUrl);
             await navigator.clipboard.writeText(shortUrl);
             btn.textContent = '✓ Copied!';
         } catch (e) {
