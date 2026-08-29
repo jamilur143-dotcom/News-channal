@@ -73,7 +73,7 @@
 .article-layout-wrapper.sidebar-left { flex-direction: row-reverse; }
 .article-layout-wrapper:not(:has(.article-sidebar.active)) .article-container { max-width: 800px; margin: 0 auto; }
     
-    .meta-data { font-family: 'Inter', sans-serif; font-size: 0.95rem; color: #555555; margin-bottom: 40px; border-bottom: 1px solid #eeeeee; padding-bottom: 20px; display: flex; gap: 24px; transition: all 0.3s ease; align-items:center; }
+    .meta-data { font-family: 'Inter', sans-serif; font-size: 0.95rem; color: #555555; margin-bottom: 40px; border-bottom: 1px solid #eeeeee; padding-bottom: 20px; display: flex; flex-wrap: wrap; gap: 24px; transition: all 0.3s ease; align-items:center; }
     .meta-data span { display: flex; flex-direction: column; }
     .meta-data span small { font-size: 0.7rem; text-transform: uppercase; color: #a0a0a0; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 4px; }
 
@@ -315,9 +315,21 @@
 
 
     @media(max-width: 768px) {
+        .visual-canvas, .article-layout-wrapper, .article-container, .t9-header-banner, .t9-content-grid {
+            box-sizing: border-box !important;
+            max-width: 100% !important;
+        }
+        .visual-canvas img, .visual-canvas iframe, .visual-canvas video {
+            max-width: 100%;
+            height: auto;
+        }
+        .article-text, .edit-p, p, h1, h2, h3, h4, h5, h6, #default-title, #default-content {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
         .article-layout-wrapper { flex-direction: column !important; padding: 24px 16px 60px !important; gap: 24px !important; }
         .article-sidebar { width: 100% !important; margin: 0 auto; }
-        .ad-horizontal { width: 100% !important; height: auto !important; min-height: 90px; }
+        .ad-horizontal { width: 100% !important; height: auto !important; min-height: 90px; box-sizing: border-box; }
         .visual-canvas.template-4 #default-content { column-count: 1; }
         .visual-canvas.template-4 .meta-data { grid-template-columns: 1fr; }
         .visual-canvas.template-6 { padding-left: 0; }
