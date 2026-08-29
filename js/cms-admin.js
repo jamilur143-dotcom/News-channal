@@ -1,3 +1,41 @@
+// --- GLOBAL HELPERS: URL RESOLUTION & SHORTENER ---
+function getArticleLandingUrl(articleId) {
+    const origin = window.location.origin;
+    let path = window.location.pathname;
+    path = path.replace(/\/admin(\/index\.html|\/)?$/i, '');
+    if (path.endsWith('/index.html')) {
+        path = path.replace(/\/index\.html$/i, '');
+    }
+    const cleanLanding = (origin + (path ? path : '') + '/landing.html').replace(/([^:])\/\//g, '$1/');
+    return `${cleanLanding}?id=${articleId}`;
+}
+
+async function generateShortUrl(longUrl) {
+    // 1. Try Ulvis API (Instant 301 Direct Redirection, 0 ads, 0 preview page)
+    try {
+        const res = await fetch(`https://ulvis.net/API/write/get?url=${encodeURIComponent(longUrl)}&type=json`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.success && data.data && data.data.url) {
+                return data.data.url;
+            }
+        }
+    } catch (e) {
+        console.warn("Ulvis shortener failed:", e);
+    }
+    // 2. Try TinyURL
+    try {
+        const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+        if (res.ok) {
+            const text = await res.text();
+            if (text && text.startsWith('http')) return text.trim();
+        }
+    } catch (e) {
+        console.warn("TinyURL fallback failed:", e);
+    }
+    return longUrl;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     
     // --- AD SETTINGS LOGIC (Cloud Synced) ---
@@ -991,7 +1029,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function renderManageArticles() {
         if(!manageBody) return;
-        const articles = await getArticlesAsync();
+        let articles = [];
+        try {
+            articles = await getArticlesAsync();
+        } catch (err) {
+            console.warn("Failed to fetch async articles, falling back to local:", err);
+            articles = getArticles();
+        }
+
         if(!articles || articles.length === 0) {
             manageBody.innerHTML = '<div style="text-align:center; padding: 40px; color: #64748b;"><h3>No articles published yet.</h3><p>Create an article and click Publish Live to see it here.</p></div>';
             return;
@@ -999,18 +1044,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let html = '<div class="article-grid">';
         articles.forEach(art => {
-            const dateStr = new Date(art.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+            if (!art) return;
+            const dateStr = art.date ? new Date(art.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : 'Recent';
             
             // Use placeholder if no media
             let imgHtml = art.media ? `<img src="${art.media}" class="m-card-img" />` : `<div class="m-card-img" style="display:flex;align-items:center;justify-content:center;font-size:3rem;">📰</div>`;
-            const fullArticleUrl = getArticleLandingUrl(art.id);
+            const fullArticleUrl = getArticleLandingUrl(art.id || 'seed-1');
 
             html += `
                 <div class="m-card" data-id="${art.id}">
                     <span class="m-status-badge">Published</span>
                     ${imgHtml}
                     <div class="m-card-body">
-                        <div class="m-card-cat">${art.category}</div>
+                        <div class="m-card-cat">${art.category || 'News'}</div>
                         <h3 class="m-card-title">${art.title || 'Untitled Article'}</h3>
                         <div class="m-card-date">🕒 ${dateStr}</div>
                         <div class="m-card-actions">

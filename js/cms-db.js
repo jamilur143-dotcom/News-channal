@@ -101,12 +101,24 @@ async function getArticlesAsync() {
   const firestore = getFirestoreDb();
   if (firestore) {
     try {
-      const snapshot = await firestore.collection('nexus_articles').orderBy('date', 'desc').get();
-      if (!snapshot.empty) {
+      let snapshot = null;
+      try {
+        snapshot = await firestore.collection('nexus_articles').orderBy('date', 'desc').get();
+      } catch (orderErr) {
+        snapshot = await firestore.collection('nexus_articles').get();
+      }
+      if (snapshot && !snapshot.empty) {
         const articles = [];
-        snapshot.forEach(doc => articles.push(doc.data()));
-        localStorage.setItem(DB_KEY, JSON.stringify(articles));
-        return articles;
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data && (data.title || data.id)) articles.push(data);
+        });
+        if (articles.length > 0) {
+          // Sort by date if available
+          articles.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+          localStorage.setItem(DB_KEY, JSON.stringify(articles));
+          return articles;
+        }
       }
     } catch (e) {
       console.warn("Firestore fetch error, using local fallback:", e);
