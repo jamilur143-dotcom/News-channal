@@ -37,6 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 dropzoneEl.style.margin = '0';
             }
             
+            // Clean up unused/unfilled predefined top/bottom ad slots
+            contentContainer.querySelectorAll('.ad-horizontal, .ad-vertical').forEach(el => {
+                if (el.style.display === 'none' || el.children.length === 0) {
+                    el.remove();
+                }
+            });
+            
             // Ensure hero media container and image are properly rendered
             const heroImg = contentContainer.querySelector('#default-hero-img, .hero-media img');
             if (heroImg) {
@@ -93,25 +100,28 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = '';
             container.style.border = 'none';
             container.style.background = 'transparent';
-            container.style.margin = '12px auto 0px auto';
+            container.style.margin = '36px auto 16px auto'; // Clean top margin so it doesn't touch article text
             container.style.padding = '0';
             container.style.display = 'flex';
             container.style.justifyContent = 'center';
             container.style.alignItems = 'center';
             container.style.width = '100%';
+            container.style.height = 'auto';
+            container.style.minHeight = '280px';
             
-            // Create clean isolated iframe to guarantee native / third-party script execution
+            // Create clean isolated iframe to guarantee native / third-party script execution without squashing
             const iframe = document.createElement('iframe');
             iframe.style.width = '100%';
             iframe.style.border = 'none';
             iframe.style.overflow = 'hidden';
-            iframe.style.minHeight = '320px'; // Increased height so titles/captions are not cut off
+            iframe.style.height = '280px';
+            iframe.style.minHeight = '280px';
             iframe.scrolling = 'no';
             container.appendChild(iframe);
             
             const doc = iframe.contentWindow || iframe.contentDocument.document || iframe.contentDocument;
             doc.document.open();
-            doc.document.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;display:flex;justify-content:center;align-items:flex-start;background:transparent;overflow:hidden;}</style></head><body>${adBannerCode}</body></html>`);
+            doc.document.write(`<!DOCTYPE html><html><head><style>html,body{margin:0;padding:0;display:flex;justify-content:center;align-items:flex-start;background:transparent;overflow:hidden;width:100%;height:100%;}</style></head><body>${adBannerCode}</body></html>`);
             doc.document.close();
         }
 
