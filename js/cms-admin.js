@@ -900,32 +900,39 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             publishBtn.disabled = true;
-            publishBtn.textContent = 'Publishing...';
+            publishBtn.textContent = 'Publishing to Cloud...';
 
-            if (isEditing) {
-                await updateArticle(article.id, article);
-            } else {
-                await addArticle(article);
-            }
-            
-            publishBtn.disabled = false;
-            publishBtn.textContent = 'Published!';
+            try {
+                if (isEditing) {
+                    await updateArticle(article.id, article);
+                } else {
+                    await addArticle(article);
+                }
+                
+                publishBtn.disabled = false;
+                publishBtn.textContent = 'Published!';
 
-            const successCard = document.getElementById('publish-success-card');
-            const viewLiveBtn = document.getElementById('view-live-btn');
-            const statusText = document.getElementById('publish-status-text');
-            
-            if(successCard && viewLiveBtn && statusText) {
-                successCard.style.background = '#f0fdf4';
-                successCard.style.border = '1px solid #bbf7d0';
-                successCard.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05)';
-                statusText.innerHTML = '&#10003; Published Successfully to Cloud!';
-                statusText.style.color = '#166534';
-                statusText.style.fontWeight = '600';
-                statusText.style.marginBottom = '12px';
-                statusText.style.fontSize = '0.85rem';
-                viewLiveBtn.style.display = 'block';
-                viewLiveBtn.href = '../landing.html?id=' + article.id;
+                const successCard = document.getElementById('publish-success-card');
+                const viewLiveBtn = document.getElementById('view-live-btn');
+                const statusText = document.getElementById('publish-status-text');
+                
+                if(successCard && viewLiveBtn && statusText) {
+                    successCard.style.background = '#f0fdf4';
+                    successCard.style.border = '1px solid #bbf7d0';
+                    successCard.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05)';
+                    statusText.innerHTML = '&#10003; Published Successfully to Cloud!';
+                    statusText.style.color = '#166534';
+                    statusText.style.fontWeight = '600';
+                    statusText.style.marginBottom = '12px';
+                    statusText.style.fontSize = '0.85rem';
+                    viewLiveBtn.style.display = 'block';
+                    viewLiveBtn.href = '../landing.html?id=' + article.id;
+                }
+            } catch (err) {
+                console.error("Publish Error:", err);
+                publishBtn.disabled = false;
+                publishBtn.textContent = 'Publish Failed';
+                alert('Cloud Publish Failed: ' + (err.message || 'Unknown Firestore Error'));
             }
 
             setTimeout(() => {

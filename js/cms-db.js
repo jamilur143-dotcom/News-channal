@@ -70,6 +70,22 @@ function initDB() {
   }
 }
 
+function getFirestoreDb() {
+  if (db) return db;
+  try {
+    if (typeof firebase !== 'undefined') {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      db = firebase.firestore();
+      return db;
+    }
+  } catch (err) {
+    console.warn("Firebase initialization retry error:", err);
+  }
+  return null;
+}
+
 // Local Synchronous Fallbacks
 function getArticles() {
   initDB();
@@ -82,9 +98,10 @@ function getArticleById(id) {
 
 // Firestore Async Functions (Global Cloud Storage)
 async function getArticlesAsync() {
-  if (db) {
+  const firestore = getFirestoreDb();
+  if (firestore) {
     try {
-      const snapshot = await db.collection('nexus_articles').orderBy('date', 'desc').get();
+      const snapshot = await firestore.collection('nexus_articles').orderBy('date', 'desc').get();
       if (!snapshot.empty) {
         const articles = [];
         snapshot.forEach(doc => articles.push(doc.data()));
@@ -99,9 +116,10 @@ async function getArticlesAsync() {
 }
 
 async function getArticleByIdAsync(id) {
-  if (db && id) {
+  const firestore = getFirestoreDb();
+  if (firestore && id) {
     try {
-      const doc = await db.collection('nexus_articles').doc(id).get();
+      const doc = await firestore.collection('nexus_articles').doc(id).get();
       if (doc.exists) {
         const article = doc.data();
         // Update local cache
@@ -124,13 +142,18 @@ async function addArticle(article) {
   localStorage.setItem(DB_KEY, JSON.stringify(articles));
 
   // 2. Save to Firestore Cloud Database
-  if (db && article.id) {
+  const firestore = getFirestoreDb();
+  if (firestore && article.id) {
     try {
-      await db.collection('nexus_articles').doc(article.id).set(article);
+      await firestore.collection('nexus_articles').doc(article.id).set(article);
       console.log("Article saved to Firestore cloud successfully:", article.id);
+      return true;
     } catch (e) {
       console.error("Failed to save article to Firestore:", e);
+      throw e;
     }
+  } else {
+    throw new Error("Firebase Firestore could not be initialized.");
   }
 }
 
@@ -139,13 +162,18 @@ async function updateArticle(id, updatedData) {
   articles = articles.map(a => a.id === id ? { ...a, ...updatedData } : a);
   localStorage.setItem(DB_KEY, JSON.stringify(articles));
 
-  if (db && id) {
+  const firestore = getFirestoreDb();
+  if (firestore && id) {
     try {
-      await db.collection('nexus_articles').doc(id).set(updatedData, { merge: true });
+      await firestore.collection('nexus_articles').doc(id).set(updatedData, { merge: true });
       console.log("Article updated in Firestore:", id);
+      return true;
     } catch (e) {
       console.error("Failed to update article in Firestore:", e);
+      throw e;
     }
+  } else {
+    throw new Error("Firebase Firestore could not be initialized.");
   }
 }
 
@@ -154,12 +182,15 @@ async function deleteArticle(id) {
   articles = articles.filter(a => a.id !== id);
   localStorage.setItem(DB_KEY, JSON.stringify(articles));
 
-  if (db && id) {
+  const firestore = getFirestoreDb();
+  if (firestore && id) {
     try {
-      await db.collection('nexus_articles').doc(id).delete();
+      await firestore.collection('nexus_articles').doc(id).delete();
       console.log("Article deleted from Firestore:", id);
+      return true;
     } catch (e) {
       console.error("Failed to delete article from Firestore:", e);
+      throw e;
     }
   }
 }
