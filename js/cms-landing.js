@@ -114,9 +114,24 @@ document.addEventListener('DOMContentLoaded', () => {
             iframe.style.width = '100%';
             iframe.style.border = 'none';
             iframe.style.overflow = 'hidden';
-            iframe.style.height = '280px';
+            iframe.style.height = '100%';
             iframe.style.minHeight = '280px';
             iframe.scrolling = 'no';
+            
+            // Adjust dimensions specifically for vertical sidebar ads
+            if (container.classList.contains('ad-vertical') || container.id === 'ad-sidebar') {
+                iframe.style.minHeight = '600px';
+                container.style.minHeight = '600px';
+                container.style.margin = '0 auto'; // No top margin needed for sidebar
+                
+                // Force parent sidebar to be fully visible and active
+                const sidebarParent = container.closest('.article-sidebar');
+                if (sidebarParent) {
+                    sidebarParent.classList.add('active');
+                    sidebarParent.style.display = 'block';
+                }
+            }
+            
             container.appendChild(iframe);
             
             const doc = iframe.contentWindow || iframe.contentDocument.document || iframe.contentDocument;
