@@ -37,9 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 dropzoneEl.style.margin = '0';
             }
             
-            // Clean up unused/unfilled predefined top/bottom ad slots
+            // Clean up unused/unfilled predefined top/bottom ad slots (keep active sidebar slots)
             contentContainer.querySelectorAll('.ad-horizontal, .ad-vertical').forEach(el => {
-                if (el.style.display === 'none' || el.children.length === 0) {
+                if (el.style.display === 'none') {
                     el.remove();
                 }
             });
@@ -92,9 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. Banner Ad Injection (Fills both Dragged Ad Blocks & Middle of Article)
+    // 2. Banner Ad Injection (Fills both Dragged Ad Blocks & Middle of Article & Sidebar)
     if (contentContainer) {
-        const manualAdBlocks = contentContainer.querySelectorAll('.ad-inline, .ad-square, .ad-horizontal, .ad-vertical, [data-type="ad"]');
+        const manualAdBlocks = contentContainer.querySelectorAll('.ad-inline, .ad-square, .ad-horizontal, .ad-vertical, [data-type="ad"], #ad-sidebar');
         
         function renderAdInContainer(container) {
             container.innerHTML = '';

@@ -426,12 +426,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.querySelectorAll('.remove-ad').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    // Robust event delegation for all remove-ad buttons
+    document.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.remove-ad');
+        if (removeBtn) {
+            e.preventDefault();
             e.stopPropagation();
-            btn.parentElement.style.display = 'none';
-            if(btn.parentElement.id === 'ad-sidebar') btn.parentElement.parentElement.classList.remove('active');
-        });
+            const parentAd = removeBtn.closest('.predefined-ad') || removeBtn.parentElement;
+            if (parentAd) {
+                parentAd.style.display = 'none';
+                const sidebarContainer = parentAd.closest('.article-sidebar');
+                if (sidebarContainer) {
+                    sidebarContainer.classList.remove('active');
+                }
+            }
+        }
     });
 
         document.querySelectorAll('.move-ad-left').forEach(btn => {
@@ -808,6 +817,21 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Clean up admin-only UI elements
             canvasClone.querySelectorAll('.remove-ad, .move-ad-left, .move-ad-right, .block-del, .drop-hint, .hero-subject-placeholder, #default-hero-overlay, .hidden-file-input, .t9-bg-upload-btn').forEach(el => el.remove());
+
+            // Make sure sidebar ad stays active in layout if enabled in admin
+            const adminSidebar = document.getElementById('ad-sidebar');
+            const clonedSidebar = canvasClone.querySelector('#ad-sidebar, .ad-vertical');
+            if (adminSidebar && adminSidebar.style.display !== 'none' && clonedSidebar) {
+                clonedSidebar.style.display = 'flex';
+                const sidebarParent = clonedSidebar.closest('.article-sidebar');
+                if (sidebarParent) {
+                    sidebarParent.classList.add('active');
+                    sidebarParent.style.display = 'block';
+                }
+            } else if (clonedSidebar) {
+                const sidebarParent = clonedSidebar.closest('.article-sidebar');
+                if (sidebarParent) sidebarParent.classList.remove('active');
+            }
 
             // Ensure hero image is explicitly styled and displayed on the published clone
             const clonedHeroImg = canvasClone.querySelector('#default-hero-img, .hero-media img');
