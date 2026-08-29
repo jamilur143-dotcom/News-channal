@@ -875,7 +875,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
             }
-            // Canvas Clone preparation
+            // Canvas Clone preparation & Element Preservation
             const canvasClone = document.getElementById('main-canvas').cloneNode(true);
             canvasClone.querySelectorAll('.remove-ad, .move-ad-left, .move-ad-right, .block-del, .drop-hint, .hero-subject-placeholder, #default-hero-overlay, .hidden-file-input, .t9-bg-upload-btn').forEach(el => el.remove());
 
@@ -893,36 +893,73 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (sidebarParent) sidebarParent.classList.remove('active');
             }
 
+            // 1. Process all dropped canvas blocks FIRST to extract their content
+            canvasClone.querySelectorAll('.canvas-block').forEach(el => {
+                const type = el.dataset.type;
+                if (type === 'p') {
+                    const inner = el.querySelector('[data-type="text"], .edit-p, .edit-text, div');
+                    if (inner && inner.innerText.trim() !== '') {
+                        const p = document.createElement('div');
+                        p.className = 'article-text';
+                        const existingStyle = inner.getAttribute('style') || '';
+                        p.style.cssText = existingStyle ? existingStyle : 'font-size: 1.15rem; margin-bottom: 28px; line-height: 1.8;';
+                        p.innerHTML = inner.innerHTML;
+                        el.replaceWith(p);
+                    } else {
+                        el.remove();
+                    }
+                } else if (type === 'img') {
+                    const img = el.querySelector('img');
+                    if (img && img.src && img.style.display !== 'none' && !img.src.endsWith('/') && !img.src.endsWith('.html')) {
+                        const fig = document.createElement('figure');
+                        fig.className = 'article-media';
+                        fig.style.cssText = 'margin: 28px 0;';
+                        fig.innerHTML = `<img src="${img.src}" style="width:100%; border-radius:6px; display:block;" />`;
+                        el.replaceWith(fig);
+                    } else {
+                        el.remove();
+                    }
+                } else if (type === 'split') {
+                    const container = el.querySelector('.split-container');
+                    if (container) {
+                        el.replaceWith(container);
+                    } else {
+                        el.remove();
+                    }
+                } else if (type === 'vid') {
+                    const iframe = el.querySelector('iframe');
+                    if (iframe && iframe.src && iframe.style.display !== 'none') {
+                        const fig = document.createElement('figure');
+                        fig.className = 'article-media';
+                        fig.style.cssText = 'margin: 28px 0;';
+                        fig.innerHTML = `<iframe src="${iframe.src}" style="width:100%; aspect-ratio:16/9; border:none; border-radius:6px;" allowfullscreen></iframe>`;
+                        el.replaceWith(fig);
+                    } else {
+                        el.remove();
+                    }
+                } else if (type === 'ad' || type === 'ad-sq' || type === 'ad-h') {
+                    const ad = el.querySelector('.ad-inline, .ad-square, .ad-horizontal');
+                    if (ad) {
+                        el.replaceWith(ad);
+                    } else {
+                        el.remove();
+                    }
+                } else {
+                    el.classList.remove('canvas-block', 'active');
+                }
+            });
+
+            // 2. Clean up inner dropzone containers and editable markers
+            canvasClone.querySelectorAll('.inner-dropzone').forEach(el => { 
+                el.style.border = 'none'; 
+                el.style.minHeight = '0'; 
+                el.classList.remove('inner-dropzone'); 
+            });
+
             canvasClone.querySelectorAll('[contenteditable]').forEach(el => {
                 el.removeAttribute('contenteditable');
                 el.removeAttribute('placeholder');
                 el.classList.remove('edit-text', 'edit-p', 'active');
-            });
-
-            canvasClone.querySelectorAll('.inner-dropzone').forEach(el => { el.style.border = 'none'; el.style.minHeight = '0'; el.classList.remove('inner-dropzone'); });
-            canvasClone.querySelectorAll('.canvas-block').forEach(el => {
-                el.classList.remove('canvas-block', 'active');
-                if (el.dataset.type === 'p') {
-                    const p = el.querySelector('.edit-p');
-                    if(p) el.replaceWith(p);
-                    else el.remove();
-                } else if (el.dataset.type === 'img') {
-                    const img = el.querySelector('img');
-                    if(img && img.style.display !== 'none') {
-                        img.removeAttribute('style');
-                        el.innerHTML = `<figure class="article-media" style="margin:24px 0;"><img src="${img.src}" style="width:100%; border-radius:4px;"/></figure>`;
-                    } else { el.remove(); }
-                } else if (el.dataset.type === 'split') { const container = el.querySelector('.split-container'); if (container) { el.replaceWith(container); } } else if (el.dataset.type === 'vid') {
-                    const iframe = el.querySelector('iframe');
-                    if(iframe && iframe.style.display !== 'none') {
-                        iframe.removeAttribute('style');
-                        el.innerHTML = `<figure class="article-media" style="margin:24px 0;"><iframe src="${iframe.src}" style="width:100%; aspect-ratio:16/9; border:none; border-radius:4px;" allowfullscreen></iframe></figure>`;
-                    } else { el.remove(); }
-                } else if (el.dataset.type === 'ad') {
-                    const ad = el.querySelector('.ad-inline');
-                    if(ad) el.replaceWith(ad);
-                    else el.remove();
-                }
             });
 
             const fullHTML = canvasClone.outerHTML;
