@@ -1,4 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- TRAFFIC TRACKING ---
+    function logTraffic(pageName, path) {
+        try {
+            let logs = JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]');
+            const now = new Date();
+            logs.push({
+                date: now.toISOString().split('T')[0],
+                time: now.toTimeString().split(' ')[0],
+                page: pageName,
+                path: path,
+                timestamp: now.getTime()
+            });
+            if (logs.length > 1000) logs = logs.slice(logs.length - 1000);
+            localStorage.setItem('siteTrafficLogs', JSON.stringify(logs));
+        } catch(e) {}
+    }
+    logTraffic('News Homepage', window.location.pathname);
+
     const articles = getArticles();
     if (articles.length === 0) return;
 

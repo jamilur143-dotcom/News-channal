@@ -1073,3 +1073,125 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 });
+
+// --- ANALYTICS DASHBOARD SYSTEM ---
+document.addEventListener('DOMContentLoaded', () => {
+    const btnAnalytics = document.getElementById('btn-analytics-dashboard');
+    const modalAnalytics = document.getElementById('analytics-dashboard-modal');
+    const btnCloseAnalytics = document.getElementById('analytics-modal-close');
+
+    if (btnAnalytics && modalAnalytics) {
+        let trafficChartInstance = null;
+
+        btnAnalytics.addEventListener('click', () => {
+            renderAnalytics();
+            modalAnalytics.style.display = 'flex';
+        });
+
+        btnCloseAnalytics.addEventListener('click', () => {
+            modalAnalytics.style.display = 'none';
+        });
+
+        modalAnalytics.addEventListener('click', (e) => {
+            if(e.target === modalAnalytics) {
+                modalAnalytics.style.display = 'none';
+            }
+        });
+
+        function renderAnalytics() {
+            const logs = JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]');
+            
+            // 1. Calculate Stats
+            const totalViews = logs.length;
+            document.getElementById('a-total-views').textContent = totalViews;
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayViews = logs.filter(l => l.date === todayStr).length;
+            document.getElementById('a-today-views').textContent = todayViews;
+
+            const pageCounts = {};
+            logs.forEach(l => {
+                pageCounts[l.page] = (pageCounts[l.page] || 0) + 1;
+            });
+            
+            let topPage = '-';
+            let maxCount = 0;
+            for (const [page, count] of Object.entries(pageCounts)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    topPage = page;
+                }
+            }
+            document.getElementById('a-top-page').textContent = topPage;
+
+            // 2. Populate Table (Last 10 visits)
+            const tbody = document.getElementById('a-traffic-log');
+            if (tbody) {
+                const recentLogs = [...logs].reverse().slice(0, 10);
+                if (recentLogs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">No traffic data recorded yet. Visit the live site to generate data!</td></tr>';
+                } else {
+                    tbody.innerHTML = recentLogs.map(l => `
+                        <tr>
+                            <td>${l.date}</td>
+                            <td>${l.time}</td>
+                            <td style="font-weight:600; color:#3b82f6;">${l.page}</td>
+                            <td style="font-size:0.8rem; color:#64748b;">${l.path}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            // 3. Render Chart.js
+            const ctx = document.getElementById('trafficChart');
+            if (ctx) {
+                // Group data by last 7 days
+                const last7Days = [];
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    last7Days.push(d.toISOString().split('T')[0]);
+                }
+
+                const chartData = last7Days.map(date => {
+                    return logs.filter(l => l.date === date).length;
+                });
+
+                if (trafficChartInstance) {
+                    trafficChartInstance.destroy();
+                }
+
+                trafficChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: last7Days,
+                        datasets: [{
+                            label: 'Daily Page Views',
+                            data: chartData,
+                            borderColor: '#3f51b5',
+                            backgroundColor: 'rgba(63, 81, 181, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#3f51b5',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { mode: 'index', intersect: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        }
+    }
+});
