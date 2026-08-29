@@ -745,6 +745,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- NEW ARTICLE BUTTON ---
+    const btnNew = document.getElementById('btn-new-article');
+    if (btnNew) {
+        btnNew.addEventListener('click', () => {
+            if (confirm('Create a new blank article? Unsaved changes in the current editor will be cleared.')) {
+                window.location.reload();
+            }
+        });
+    }
+
     // --- 6. PUBLISH LOGIC ---
     const publishBtn = document.getElementById('publish-btn');
     if(publishBtn) {
