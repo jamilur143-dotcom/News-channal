@@ -29,6 +29,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (article.fullHTML) {
             contentContainer.innerHTML = article.fullHTML;
             
+            // Clean up admin dropzone dashed borders and excessive margins
+            const dropzoneEl = contentContainer.querySelector('#dropzone');
+            if (dropzoneEl) {
+                dropzoneEl.style.border = 'none';
+                dropzoneEl.style.padding = '0';
+                dropzoneEl.style.margin = '0';
+            }
+            
             // Ensure hero media container and image are properly rendered
             const heroImg = contentContainer.querySelector('#default-hero-img, .hero-media img');
             if (heroImg) {
@@ -85,7 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = '';
             container.style.border = 'none';
             container.style.background = 'transparent';
-            container.style.margin = '28px auto';
+            container.style.margin = '12px auto 0px auto';
+            container.style.padding = '0';
             container.style.display = 'flex';
             container.style.justifyContent = 'center';
             container.style.alignItems = 'center';
@@ -96,13 +105,13 @@ document.addEventListener('DOMContentLoaded', () => {
             iframe.style.width = '100%';
             iframe.style.border = 'none';
             iframe.style.overflow = 'hidden';
-            iframe.style.minHeight = '270px';
+            iframe.style.minHeight = '320px'; // Increased height so titles/captions are not cut off
             iframe.scrolling = 'no';
             container.appendChild(iframe);
             
             const doc = iframe.contentWindow || iframe.contentDocument.document || iframe.contentDocument;
             doc.document.open();
-            doc.document.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;display:flex;justify-content:center;align-items:center;background:transparent;overflow:hidden;}</style></head><body>${adBannerCode}</body></html>`);
+            doc.document.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;display:flex;justify-content:center;align-items:flex-start;background:transparent;overflow:hidden;}</style></head><body>${adBannerCode}</body></html>`);
             doc.document.close();
         }
 
