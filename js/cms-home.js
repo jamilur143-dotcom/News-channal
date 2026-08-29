@@ -94,19 +94,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Inject Banner Ads to Sidebar and Main Banner slots if code exists
     if (adBannerCode && adBannerCode.trim() !== '') {
         const adZones = document.querySelectorAll('.ad-zone');
-        adZones.forEach(zone => {
+        adZones.forEach((zone, idx) => {
             zone.innerHTML = '';
             zone.style.background = 'transparent';
             zone.style.border = 'none';
-            zone.innerHTML = adBannerCode;
-
-            // Execute any scripts inside
-            Array.from(zone.querySelectorAll('script')).forEach(oldScript => {
-                const newScript = document.createElement('script');
-                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                newScript.text = oldScript.textContent;
-                oldScript.replaceWith(newScript);
-            });
+            
+            // Only inject the main ad code once into the top banner, or load via iframe/isolated container
+            // If the code has a specific container ID, Adsterra targets that exact container ID.
+            // Having duplicate IDs on the same page breaks Adsterra. So we create unique wrappers.
+            if (idx === 0) {
+                zone.innerHTML = adBannerCode;
+                Array.from(zone.querySelectorAll('script')).forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.text = oldScript.textContent;
+                    oldScript.replaceWith(newScript);
+                });
+            } else {
+                // For sidebar slots, use a clean isolated iframe sandbox to render the ad unit
+                const iframe = document.createElement('iframe');
+                iframe.style.width = '100%';
+                iframe.style.border = 'none';
+                iframe.style.overflow = 'hidden';
+                iframe.style.minHeight = '250px';
+                iframe.scrolling = 'no';
+                zone.appendChild(iframe);
+                
+                const doc = iframe.contentWindow || iframe.contentDocument.document || iframe.contentDocument;
+                doc.document.open();
+                doc.document.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;display:flex;justify-content:center;align-items:center;}</style></head><body>${adBannerCode}</body></html>`);
+                doc.document.close();
+            }
         });
     }
 });
