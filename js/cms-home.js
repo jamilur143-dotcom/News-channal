@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // --- TRAFFIC TRACKING ---
     function logTraffic(pageName, path) {
         try {
@@ -17,8 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     logTraffic('News Homepage', window.location.pathname);
 
-    const articles = getArticles();
-    if (articles.length === 0) return;
+    const articles = await getArticlesAsync();
+    if (!articles || articles.length === 0) return;
 
     // The most recently published article always shifts to the Hero Section
     const hero = articles[0];

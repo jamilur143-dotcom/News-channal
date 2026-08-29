@@ -1,5 +1,30 @@
 const DB_KEY = 'nexus_cms_articles';
 
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCsFepvv7MuyCPWs4v-qTSIMnBCb3Xqbc0",
+  authDomain: "display-adds-ee8f3.firebaseapp.com",
+  projectId: "display-adds-ee8f3",
+  storageBucket: "display-adds-ee8f3.firebasestorage.app",
+  messagingSenderId: "648789918792",
+  appId: "1:648789918792:web:0e54a6e94357c46e68447d",
+  measurementId: "G-HPBBM8KTSB"
+};
+
+// Initialize Firebase
+let db = null;
+try {
+  if (typeof firebase !== 'undefined') {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.firestore();
+    console.log("Firebase Firestore connected successfully.");
+  }
+} catch (err) {
+  console.warn("Firebase initialization error:", err);
+}
+
 const seedData = [
   {
     id: 'art-seed-1',
@@ -45,29 +70,97 @@ function initDB() {
   }
 }
 
+// Local Synchronous Fallbacks
 function getArticles() {
   initDB();
   return JSON.parse(localStorage.getItem(DB_KEY)) || [];
-}
-
-function addArticle(article) {
-  const articles = getArticles();
-  articles.unshift(article); // Add to the beginning (most recent first)
-  localStorage.setItem(DB_KEY, JSON.stringify(articles));
 }
 
 function getArticleById(id) {
   return getArticles().find(a => a.id === id);
 }
 
-function updateArticle(id, updatedData) {
+// Firestore Async Functions (Global Cloud Storage)
+async function getArticlesAsync() {
+  if (db) {
+    try {
+      const snapshot = await db.collection('nexus_articles').orderBy('date', 'desc').get();
+      if (!snapshot.empty) {
+        const articles = [];
+        snapshot.forEach(doc => articles.push(doc.data()));
+        localStorage.setItem(DB_KEY, JSON.stringify(articles));
+        return articles;
+      }
+    } catch (e) {
+      console.warn("Firestore fetch error, using local fallback:", e);
+    }
+  }
+  return getArticles();
+}
+
+async function getArticleByIdAsync(id) {
+  if (db && id) {
+    try {
+      const doc = await db.collection('nexus_articles').doc(id).get();
+      if (doc.exists) {
+        const article = doc.data();
+        // Update local cache
+        const localArticles = getArticles().filter(a => a.id !== id);
+        localArticles.unshift(article);
+        localStorage.setItem(DB_KEY, JSON.stringify(localArticles));
+        return article;
+      }
+    } catch (e) {
+      console.warn("Firestore get error, using local fallback:", e);
+    }
+  }
+  return getArticleById(id);
+}
+
+async function addArticle(article) {
+  // 1. Save to Local Cache first
+  const articles = getArticles().filter(a => a.id !== article.id);
+  articles.unshift(article);
+  localStorage.setItem(DB_KEY, JSON.stringify(articles));
+
+  // 2. Save to Firestore Cloud Database
+  if (db && article.id) {
+    try {
+      await db.collection('nexus_articles').doc(article.id).set(article);
+      console.log("Article saved to Firestore cloud successfully:", article.id);
+    } catch (e) {
+      console.error("Failed to save article to Firestore:", e);
+    }
+  }
+}
+
+async function updateArticle(id, updatedData) {
   let articles = getArticles();
   articles = articles.map(a => a.id === id ? { ...a, ...updatedData } : a);
   localStorage.setItem(DB_KEY, JSON.stringify(articles));
+
+  if (db && id) {
+    try {
+      await db.collection('nexus_articles').doc(id).set(updatedData, { merge: true });
+      console.log("Article updated in Firestore:", id);
+    } catch (e) {
+      console.error("Failed to update article in Firestore:", e);
+    }
+  }
 }
 
-function deleteArticle(id) {
+async function deleteArticle(id) {
   let articles = getArticles();
   articles = articles.filter(a => a.id !== id);
   localStorage.setItem(DB_KEY, JSON.stringify(articles));
+
+  if (db && id) {
+    try {
+      await db.collection('nexus_articles').doc(id).delete();
+      console.log("Article deleted from Firestore:", id);
+    } catch (e) {
+      console.error("Failed to delete article from Firestore:", e);
+    }
+  }
 }
+

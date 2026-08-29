@@ -1,13 +1,18 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
-    const articles = getArticles();
     
-    // If an ID is provided, load that specific article.
-    const article = id ? getArticleById(id) : articles[0];
+    // Fetch article from Firestore cloud (or local cache)
+    let article = null;
+    if (id) {
+        article = await getArticleByIdAsync(id);
+    } else {
+        const articles = await getArticlesAsync();
+        article = articles[0];
+    }
 
     if (!article) {
-        document.getElementById('dynamic-landing-content').innerHTML = '<h1>Article not found</h1>';
+        document.getElementById('dynamic-landing-content').innerHTML = '<div style="text-align:center; padding: 60px 20px; font-family: sans-serif;"><h1>Article not found</h1><p style="color:#666;">The requested story could not be loaded or may have been removed.</p><a href="index.html" style="color:#E53935; font-weight:bold; text-decoration:none;">&larr; Back to Homepage</a></div>';
         return;
     }
 

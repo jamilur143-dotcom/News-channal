@@ -748,7 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 6. PUBLISH LOGIC ---
     const publishBtn = document.getElementById('publish-btn');
     if(publishBtn) {
-        publishBtn.addEventListener('click', () => {
+        publishBtn.addEventListener('click', async () => {
             const title = defaultTitle ? defaultTitle.innerText.trim() : '';
             const media = (defaultHeroImg && defaultHeroImg.style.display !== 'none') ? defaultHeroImg.src : '';
             const catSelect = document.getElementById('news-cat');
@@ -899,12 +899,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 date: new Date().toISOString()
             };
 
+            publishBtn.disabled = true;
+            publishBtn.textContent = 'Publishing...';
+
             if (isEditing) {
-                updateArticle(article.id, article);
+                await updateArticle(article.id, article);
             } else {
-                addArticle(article);
+                await addArticle(article);
             }
             
+            publishBtn.disabled = false;
+            publishBtn.textContent = 'Published!';
+
             const successCard = document.getElementById('publish-success-card');
             const viewLiveBtn = document.getElementById('view-live-btn');
             const statusText = document.getElementById('publish-status-text');
@@ -913,7 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 successCard.style.background = '#f0fdf4';
                 successCard.style.border = '1px solid #bbf7d0';
                 successCard.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05)';
-                statusText.innerHTML = '&#10003; Published Successfully!';
+                statusText.innerHTML = '&#10003; Published Successfully to Cloud!';
                 statusText.style.color = '#166534';
                 statusText.style.fontWeight = '600';
                 statusText.style.marginBottom = '12px';
@@ -922,32 +928,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 viewLiveBtn.href = '../landing.html?id=' + article.id;
             }
 
-            publishBtn.textContent = 'Published!';
             setTimeout(() => {
                 publishBtn.textContent = 'Publish Live';
             }, 2000);
         });
     }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // --- MANAGE ARTICLES SYSTEM ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -957,9 +943,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const manageBody = document.getElementById('manage-modal-body');
 
     if(btnManage && modalManage) {
-        btnManage.addEventListener('click', () => {
-            renderManageArticles();
+        btnManage.addEventListener('click', async () => {
             modalManage.style.display = 'flex';
+            if (manageBody) manageBody.innerHTML = '<div style="text-align:center; padding: 40px; color: #64748b;"><h3>Loading articles from Cloud...</h3></div>';
+            await renderManageArticles();
         });
 
         btnCloseManage.addEventListener('click', () => {
@@ -974,10 +961,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderManageArticles() {
+    async function renderManageArticles() {
         if(!manageBody) return;
-        const articles = getArticles();
-        if(articles.length === 0) {
+        const articles = await getArticlesAsync();
+        if(!articles || articles.length === 0) {
             manageBody.innerHTML = '<div style="text-align:center; padding: 40px; color: #64748b;"><h3>No articles published yet.</h3><p>Create an article and click Publish Live to see it here.</p></div>';
             return;
         }
@@ -1010,10 +997,10 @@ document.addEventListener('DOMContentLoaded', () => {
         manageBody.innerHTML = html;
     }
 
-    window.removeArticle = function(id) {
+    window.removeArticle = async function(id) {
         if(confirm('Are you sure you want to permanently delete this article? This action cannot be undone.')) {
-            deleteArticle(id);
-            renderManageArticles(); // Refresh list
+            await deleteArticle(id);
+            await renderManageArticles(); // Refresh list
         }
     };
 
