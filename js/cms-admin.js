@@ -11,28 +11,30 @@ function getArticleLandingUrl(articleId) {
 }
 
 async function generateShortUrl(longUrl) {
-    // 1. Try Ulvis API (Instant 301 Direct Redirection, 0 ads, 0 preview page)
+    // 1. Spoo.me (Instant Direct 0-Second Redirection, Zero Ads, Zero Countdown)
     try {
-        const res = await fetch(`https://ulvis.net/API/write/get?url=${encodeURIComponent(longUrl)}&type=json`);
+        const formData = new URLSearchParams();
+        formData.append('url', longUrl);
+
+        const res = await fetch('https://spoo.me/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
+            body: formData.toString()
+        });
+
         if (res.ok) {
             const data = await res.json();
-            if (data && data.success && data.data && data.data.url) {
-                return data.data.url;
+            if (data && data.short_url) {
+                return data.short_url.replace('http://', 'https://');
             }
         }
     } catch (e) {
-        console.warn("Ulvis shortener failed:", e);
+        console.warn("Spoo.me shortener failed, falling back to direct URL:", e);
     }
-    // 2. Try TinyURL
-    try {
-        const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
-        if (res.ok) {
-            const text = await res.text();
-            if (text && text.startsWith('http')) return text.trim();
-        }
-    } catch (e) {
-        console.warn("TinyURL fallback failed:", e);
-    }
+
     return longUrl;
 }
 
