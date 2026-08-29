@@ -71,4 +71,42 @@ document.addEventListener('DOMContentLoaded', () => {
         
         gridContainer.innerHTML = gridHtml;
     }
+    /* ── Inject Adsterra Ads ───────────────────────────────── */
+    const adBannerCode = localStorage.getItem('adBannerCode');
+    const adPopunderCode = localStorage.getItem('adPopunderCode');
+
+    // 1. Inject Popunder / Social Bar Script
+    if (adPopunderCode && adPopunderCode.trim() !== '') {
+        const temp = document.createElement('div');
+        temp.innerHTML = adPopunderCode;
+        Array.from(temp.childNodes).forEach(node => {
+            if (node.tagName && node.tagName.toLowerCase() === 'script') {
+                const script = document.createElement('script');
+                Array.from(node.attributes).forEach(attr => script.setAttribute(attr.name, attr.value));
+                script.text = node.textContent;
+                document.body.appendChild(script);
+            } else {
+                document.body.appendChild(node.cloneNode(true));
+            }
+        });
+    }
+
+    // 2. Inject Banner Ads to Sidebar and Main Banner slots if code exists
+    if (adBannerCode && adBannerCode.trim() !== '') {
+        const adZones = document.querySelectorAll('.ad-zone');
+        adZones.forEach(zone => {
+            zone.innerHTML = '';
+            zone.style.background = 'transparent';
+            zone.style.border = 'none';
+            zone.innerHTML = adBannerCode;
+
+            // Execute any scripts inside
+            Array.from(zone.querySelectorAll('script')).forEach(oldScript => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.text = oldScript.textContent;
+                oldScript.replaceWith(newScript);
+            });
+        });
+    }
 });
