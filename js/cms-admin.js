@@ -503,20 +503,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Robust event delegation for all remove-ad buttons
-    document.addEventListener('click', (e) => {
-        const removeBtn = e.target.closest('.remove-ad');
-        if (removeBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-            const parentAd = removeBtn.closest('.predefined-ad') || removeBtn.parentElement;
-            if (parentAd) {
-                parentAd.style.display = 'none';
-                const sidebarContainer = parentAd.closest('.article-sidebar');
-                if (sidebarContainer) {
-                    sidebarContainer.classList.remove('active');
+    ['click', 'mousedown', 'touchstart'].forEach(evt => {
+        document.addEventListener(evt, (e) => {
+            const removeBtn = e.target.closest('.remove-ad');
+            if (removeBtn) {
+                if (evt !== 'click') e.preventDefault();
+                e.stopPropagation();
+                const parentAd = removeBtn.closest('.predefined-ad') || removeBtn.parentElement;
+                if (parentAd) {
+                    parentAd.style.display = 'none';
+                    const sidebarContainer = parentAd.closest('.article-sidebar');
+                    if (sidebarContainer) {
+                        sidebarContainer.classList.remove('active');
+                    }
                 }
             }
-        }
+        }, {passive: false});
     });
 
         document.querySelectorAll('.move-ad-left').forEach(btn => {
@@ -541,11 +543,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Handle delete button explicitly
         const delBtn = block.querySelector('.block-del');
         if (delBtn) {
-            delBtn.addEventListener('click', (e) => {
+            const removeAction = (e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 block.remove();
                 activatePanel('meta');
-            });
+            };
+            delBtn.addEventListener('mousedown', removeAction);
+            delBtn.addEventListener('click', removeAction);
+            delBtn.addEventListener('touchstart', removeAction, {passive: false});
         }
 
         block.addEventListener('click', (e) => {
