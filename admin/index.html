@@ -191,7 +191,7 @@
           
           <!-- TOP AD SLOT (Horizontal) -->
           <div class="predefined-ad ad-horizontal" id="ad-top" style="display:none;" data-slot="top">
-            <button class="remove-ad" title="Remove Ad">&times;</button>
+            <button type="button" class="remove-ad" title="Remove Ad" onclick="this.closest('.predefined-ad').style.display='none'; event.stopPropagation();">&times;</button>
             <span>Top Leaderboard Ad (728x90)</span>
           </div>
           
@@ -236,10 +236,10 @@
                <!-- SIDEBAR AD SLOT (Vertical) -->
                <div class="predefined-ad ad-vertical" id="ad-sidebar" style="display:none;" data-slot="sidebar">
                   <div style="position:absolute; top:8px; left:8px; display:flex; gap:4px;">
-                      <button class="move-ad-left" title="Move Sidebar to Left" style="background:#fff; border:1px solid #ccc; border-radius:4px; cursor:pointer; padding:2px 6px;">&larr;</button>
-                      <button class="move-ad-right" title="Move Sidebar to Right" style="background:#fff; border:1px solid #ccc; border-radius:4px; cursor:pointer; padding:2px 6px; display:none;">&rarr;</button>
+                      <button type="button" class="move-ad-left" title="Move Sidebar to Left" style="background:#fff; border:1px solid #ccc; border-radius:4px; cursor:pointer; padding:2px 6px;">&larr;</button>
+                      <button type="button" class="move-ad-right" title="Move Sidebar to Right" style="background:#fff; border:1px solid #ccc; border-radius:4px; cursor:pointer; padding:2px 6px; display:none;">&rarr;</button>
                   </div>
-                  <button class="remove-ad" title="Remove Ad">&times;</button>
+                  <button type="button" class="remove-ad" title="Remove Ad" onclick="this.closest('.predefined-ad').style.display='none'; event.stopPropagation();">&times;</button>
                   <span>Sidebar Banner (300x600)</span>
                </div>
             </aside>
@@ -248,7 +248,7 @@
 
           <!-- BOTTOM AD SLOT (Horizontal) -->
           <div class="predefined-ad ad-horizontal" id="ad-bottom" style="display:none;" data-slot="bottom">
-            <button class="remove-ad" title="Remove Ad">&times;</button>
+            <button type="button" class="remove-ad" title="Remove Ad" onclick="this.closest('.predefined-ad').style.display='none'; event.stopPropagation();">&times;</button>
             <span>Bottom Banner Ad (728x90)</span>
           </div>
 

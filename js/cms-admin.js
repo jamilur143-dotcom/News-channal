@@ -462,7 +462,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                     block.classList.add('split-block');
                     block.dataset.type = 'split';
-                    block.innerHTML = `<button class="block-del" title="Delete Block">&times;</button>
+                    block.innerHTML = `<button type="button" class="block-del" title="Delete Block" onclick="this.closest('.canvas-block').remove(); event.stopPropagation();">&times;</button>
                         <div class="split-container" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; padding-top:20px;">
                             <div class="inner-dropzone" style="border:1px dashed #ccc; padding:16px; min-height:100px;"></div>
                             <div class="inner-dropzone" style="border:1px dashed #ccc; padding:16px; min-height:100px;"></div>
@@ -479,7 +479,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div style="font-weight:600; color:#aaa;">Inline Square Ad<br/>(300x250)</div>
                     </aside>`;
 
-                    block.innerHTML = `<button class="block-del" title="Delete Block">&times;</button>${inner}`;
+                    block.innerHTML = `<button type="button" class="block-del" title="Delete Block" onclick="this.closest('.canvas-block').remove(); event.stopPropagation();">&times;</button>${inner}`;
                 }
 
                 // Determine insert position based on where user dropped it
