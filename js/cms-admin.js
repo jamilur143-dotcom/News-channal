@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     let inner = '';
                     if(type === 'p') inner = '<div contenteditable="true" class="edit-text edit-p" data-type="text" placeholder="Start typing new paragraph..."></div>';
-                    if(type === 'img') inner = '<div class="img-ph" style="display:flex; flex-direction:column; gap:6px; justify-content:center; align-items:center; cursor:pointer;"><span>[img] Click to upload image</span><span style="font-size:0.75rem; color:#64748b; background:#e2e8f0; padding:2px 8px; border-radius:10px; font-weight:600;">Recommended: 800 x 500 px (16:9)</span></div><img src="" style="display:none; width:100%; object-fit:cover; border-radius:4px;" /><input type="file" class="hidden-file-input" accept="image/*" style="display:none;">';
+                    if(type === 'img') inner = '<div class="img-ph" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:flex; flex-direction:column; gap:6px; justify-content:center; align-items:center; cursor:pointer;"><span>[img] Click to upload image</span><span style="font-size:0.75rem; color:#64748b; background:#e2e8f0; padding:2px 8px; border-radius:10px; font-weight:600;">Recommended: 800 x 500 px (16:9)</span></div><img src="" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:none; width:100%; object-fit:cover; border-radius:4px;" /><input type="file" class="hidden-file-input" accept="image/*" style="display:none;">';
                     if(type === 'vid') inner = '<div class="vid-ph">&#9654; Click here, then set YouTube URL in the right panel</div><iframe src="" style="display:none; width:100%; aspect-ratio:16/9; border:none; border-radius:4px;" allowfullscreen></iframe>';
                     if(type === 'ad-sq') inner = `<aside class="ad-inline ad-square" contenteditable="false" style="background:#f9f9f9; border:1px solid #e0e0e0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:250px;">
                         <span style="font-size:0.7rem; color:#888; text-transform:uppercase; margin-bottom:8px;">Advertisement</span>
@@ -568,14 +568,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             block.classList.add('active');
             activeBlock = block;
 
-            // Explicitly handle placeholder click here for better reliability
-            if (e.target.closest('.img-ph') || e.target.closest('img')) {
-                const fileInput = block.querySelector('.hidden-file-input');
-                if (fileInput) {
-                    fileInput.click();
-                }
-            }
-
             const type = block.dataset.type;
             if(type === 'p') {
                 activatePanel('text');
@@ -597,10 +589,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const imgEl = block.querySelector('img');
             
             if(ph && fileInput) {
-                // Ensure double protection, but the block listener above also handles this now.
-                ph.addEventListener('click', () => fileInput.click());
-                imgEl.addEventListener('click', () => fileInput.click()); 
-                
                 fileInput.addEventListener('change', async function() {
                     const file = this.files[0];
                     if(file) {
