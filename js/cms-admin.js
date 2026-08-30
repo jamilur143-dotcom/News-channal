@@ -360,28 +360,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- 1. HERO IMAGE LOGIC ---
-    if(defaultHero && defaultHeroInput) {
-        defaultHero.addEventListener('click', (e) => {
-            // Prevent triggering upload if user is clicking on text blocks inside the hero
+    // Use event delegation to survive DOM replacements (e.g. loading an article)
+    document.addEventListener('click', (e) => {
+        const hero = e.target.closest('#default-hero');
+        if (hero) {
             if(e.target.closest('#default-title') || e.target.closest('.meta-data') || e.target.closest('#default-content')) return;
-            if(e.target !== defaultHeroInput) defaultHeroInput.click();
-        });
-        defaultHeroInput.addEventListener('change', function() {
-            const file = this.files[0];
+            const heroInput = document.getElementById('default-hero-input');
+            if(heroInput && e.target !== heroInput) heroInput.click();
+        }
+    });
+
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.id === 'default-hero-input') {
+            const file = e.target.files[0];
             if(file) {
                 const reader = new FileReader();
-                reader.onload = async (e) => {
-                    defaultHeroImg.src = e.target.result;
-                    defaultHeroImg.style.display = 'block';
+                reader.onload = async (ev) => {
+                    const defaultHeroImg = document.getElementById('default-hero-img');
+                    const defaultHeroPh = document.getElementById('default-hero-ph');
+                    const defaultHeroOverlay = document.getElementById('default-hero-overlay');
+                    
+                    if(defaultHeroImg) {
+                        defaultHeroImg.src = ev.target.result;
+                        defaultHeroImg.style.display = 'block';
+                    }
                     if(defaultHeroPh) defaultHeroPh.style.display = 'none';
                     if(defaultHeroOverlay) defaultHeroOverlay.style.display = 'none';
 
                     try {
                         const cdnUrl = await window.uploadToCloudinaryGlobal(file);
-                        defaultHeroImg.src = cdnUrl;
+                        if(defaultHeroImg) defaultHeroImg.src = cdnUrl;
                         console.log('Hero image successfully uploaded to Cloudinary:', cdnUrl);
                     } catch (err) {
-                        console.error('Cloudinary upload error, using local fallback:', err);
+                        console.error('Cloudinary upload error:', err);
+                        alert('Cloudinary Upload Failed: ' + err.message);
                     }
                 };
                 reader.readAsDataURL(file);
@@ -590,19 +602,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    [defaultTitle, defaultContent, defaultHeroCaption].forEach(el => {
-        if(el) {
-            ['click', 'focus', 'keyup'].forEach(evt => {
-                el.addEventListener(evt, (e) => {
-                    e.stopPropagation();
-                    clearActiveStates();
-                    el.classList.add('active');
-                    activeBlock = el;
-                    activatePanel('text');
-                    if (evt !== 'keyup') syncTextStyles(el);
-                });
-            });
-        }
+    // Use event delegation for default text elements so they survive DOM replacement during "Edit Article"
+    ['click', 'focusin', 'keyup'].forEach(evt => {
+        document.addEventListener(evt, (e) => {
+            const target = e.target.closest('#default-title, #default-content, #default-hero-caption');
+            if (target) {
+                // For keyup, let it bubble so global listeners aren't blocked, but handle our logic.
+                if (evt !== 'keyup') e.stopPropagation();
+                
+                clearActiveStates();
+                target.classList.add('active');
+                activeBlock = target;
+                activatePanel('text');
+                if (evt !== 'keyup') syncTextStyles(target);
+            }
+        });
     });
 
     function clearActiveStates() {
