@@ -398,8 +398,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
                 reader.readAsDataURL(file);
             }
-        });
-    }
+        }
+    });
 
     // --- 2. DRAG AND DROP ENGINE (SMART ADS) ---
     document.querySelectorAll('.tool-item').forEach(tool => {
