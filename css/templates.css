@@ -369,7 +369,7 @@
     .canvas-block.active { border-color: #90caf9; }
     
     .block-del { position: absolute; top: -12px; right: -12px; background: #ef4444; color: #fff; width: 24px; height: 24px; border-radius: 50%; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; font-weight: bold; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-    .canvas-block.active .block-del { display: flex; }
+    .canvas-block.active .block-del, .canvas-block:hover .block-del { display: flex; }
     
     .img-ph { background: #f1f5f9; height: 250px; display: flex; align-items: center; justify-content: center; color: #64748b; font-family: 'Inter', sans-serif; cursor: pointer; border-radius: 4px; border: 2px dashed #cbd5e1; }
     .vid-ph { background: #1e293b; height: 350px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Inter', sans-serif; cursor: pointer; border-radius: 4px; border: 2px dashed #475569; }

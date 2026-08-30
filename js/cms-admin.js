@@ -538,10 +538,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- 3. SELECTION & PANEL SWITCHING ---
     window.bindBlock = function(block) {
+        // Handle delete button explicitly
+        const delBtn = block.querySelector('.block-del');
+        if (delBtn) {
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                block.remove();
+                activatePanel('meta');
+            });
+        }
+
         block.addEventListener('click', (e) => {
             e.stopPropagation();
             
-            if (e.target.classList.contains('block-del')) {
+            // Fallback for delete button in case the direct listener was missed
+            if (e.target.closest('.block-del')) {
                 block.remove();
                 activatePanel('meta');
                 return;
@@ -550,6 +561,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             clearActiveStates();
             block.classList.add('active');
             activeBlock = block;
+
+            // Explicitly handle placeholder click here for better reliability
+            if (e.target.closest('.img-ph') || e.target.closest('img')) {
+                const fileInput = block.querySelector('.hidden-file-input');
+                if (fileInput) {
+                    fileInput.click();
+                }
+            }
 
             const type = block.dataset.type;
             if(type === 'p') {
@@ -572,6 +591,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const imgEl = block.querySelector('img');
             
             if(ph && fileInput) {
+                // Ensure double protection, but the block listener above also handles this now.
                 ph.addEventListener('click', () => fileInput.click());
                 imgEl.addEventListener('click', () => fileInput.click()); 
                 
