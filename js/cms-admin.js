@@ -89,6 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const defaultHeroImg = document.getElementById('default-hero-img');
     const defaultHeroPh = document.getElementById('default-hero-ph');
     const defaultHeroOverlay = document.getElementById('default-hero-overlay');
+    const defaultHeroCaption = document.getElementById('default-hero-caption');
     const metaContainer = document.querySelector('.meta-data');
     const articleContainer = document.querySelector('.article-container');
     
@@ -140,6 +141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const topAd = document.getElementById('ad-top');
                 if(topAd) topAd.after(defaultHero); // Hero at the top
                 else canvas.insertBefore(defaultHero, canvas.firstChild);
+                if(defaultHeroCaption) defaultHero.after(defaultHeroCaption);
             }
 
             // Cleanup any temporary wrapper from T8 & T9
@@ -158,17 +160,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 canvas.classList.add('template-2');
                 if(metaContainer && defaultHero) {
                     metaContainer.after(defaultHero);
+                    if(defaultHeroCaption) defaultHero.after(defaultHeroCaption);
                 }
             } else if (val === 'template3') {
                 // Template 3: Meta -> Title -> Intro Paragraph -> Hero -> Rest
                 canvas.classList.add('template-3');
                 if(defaultTitle && metaContainer) defaultTitle.before(metaContainer);
-                if(defaultContent && defaultHero) defaultContent.after(defaultHero);
+                if(defaultContent && defaultHero) {
+                    defaultContent.after(defaultHero);
+                    if(defaultHeroCaption) defaultHero.after(defaultHeroCaption);
+                }
             } else if (val === 'template4') {
                 // Template 4 (Magazine): Title -> Intro Content -> Hero -> Meta Grid -> Rest
                 canvas.classList.add('template-4');
-                if(defaultContent && defaultHero) defaultContent.after(defaultHero); 
-                if(defaultHero && metaContainer) defaultHero.after(metaContainer); 
+                if(defaultContent && defaultHero) {
+                    defaultContent.after(defaultHero); 
+                    if(defaultHeroCaption) defaultHero.after(defaultHeroCaption);
+                }
+                if(defaultHero && metaContainer) {
+                    if(defaultHeroCaption) defaultHeroCaption.after(metaContainer);
+                    else defaultHero.after(metaContainer);
+                }
             } else if (val === 'template5') {
                 // Template 5 (Immersive): Title & Meta go INSIDE the Hero banner.
                 canvas.classList.add('template-5');
@@ -213,6 +225,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     textWrap.appendChild(defaultTitle);
                     textWrap.appendChild(defaultContent);
                     imgWrap.appendChild(defaultHero);
+                    if(defaultHeroCaption) imgWrap.appendChild(defaultHeroCaption);
                 }
             } else if (val === 'template9') {
                 // Template 9: Magazine Editorial (Editor's Note)
@@ -278,6 +291,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 authorCol.className = 't9-author-col';
                 if(defaultHero) {
                     authorCol.appendChild(defaultHero);
+                    if(defaultHeroCaption) authorCol.appendChild(defaultHeroCaption);
                 }
 
                 headerBanner.appendChild(headerLeft);
@@ -577,7 +591,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    [defaultTitle, defaultContent].forEach(el => {
+    [defaultTitle, defaultContent, defaultHeroCaption].forEach(el => {
         if(el) {
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -879,6 +893,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const canvasClone = document.getElementById('main-canvas').cloneNode(true);
             canvasClone.querySelectorAll('.remove-ad, .move-ad-left, .move-ad-right, .block-del, .drop-hint, .hero-subject-placeholder, #default-hero-overlay, .hidden-file-input, .t9-bg-upload-btn').forEach(el => el.remove());
 
+            const clonedCaption = canvasClone.querySelector('#default-hero-caption');
+            if (clonedCaption && clonedCaption.innerText.trim() === '') {
+                clonedCaption.remove();
+            }
+
             const adminSidebar = document.getElementById('ad-sidebar');
             const clonedSidebar = canvasClone.querySelector('#ad-sidebar, .ad-vertical');
             if (adminSidebar && adminSidebar.style.display !== 'none' && clonedSidebar) {
@@ -1147,6 +1166,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. Restore content
         if (art.adminHTML) {
             canvas.innerHTML = art.adminHTML;
+            // Inject caption box if editing an old article that didn't have it
+            const existingHero = canvas.querySelector('#default-hero');
+            if (existingHero && !canvas.querySelector('#default-hero-caption')) {
+                const newCaption = document.createElement('div');
+                newCaption.className = 'hero-caption edit-text';
+                newCaption.id = 'default-hero-caption';
+                newCaption.setAttribute('contenteditable', 'true');
+                newCaption.setAttribute('placeholder', 'Image Credit / Caption (Optional)');
+                existingHero.after(newCaption);
+            }
         } else if (art.fullHTML) {
             // Fallback for older articles without adminHTML
             canvas.innerHTML = art.fullHTML;
@@ -1165,6 +1194,17 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             // very old articles
             canvas.innerHTML = art.content; 
+        }
+
+        // Inject caption box if missing in fallback cases
+        const existingHeroGlobal = canvas.querySelector('#default-hero');
+        if (existingHeroGlobal && !canvas.querySelector('#default-hero-caption')) {
+            const newCaption = document.createElement('div');
+            newCaption.className = 'hero-caption edit-text';
+            newCaption.id = 'default-hero-caption';
+            newCaption.setAttribute('contenteditable', 'true');
+            newCaption.setAttribute('placeholder', 'Image Credit / Caption (Optional)');
+            existingHeroGlobal.after(newCaption);
         }
 
         // 3. Restore Category Selection

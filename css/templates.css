@@ -64,6 +64,13 @@
     }
     .hero-subject-placeholder svg { width: 100px; height: 100px; fill: #A0A0A0; }
     
+    .hero-caption {
+        font-family: 'Inter', sans-serif; font-size: 0.8rem; color: #718096;
+        text-align: left; padding: 8px 24px; max-width: 1100px; margin: 0 auto 16px auto;
+        line-height: 1.4; outline: none; transition: 0.2s;
+    }
+    .hero-caption:empty { display: none !important; }
+    
     .article-layout-wrapper {
       display: flex; gap: 40px; max-width: 1100px; margin: 0 auto; padding: 48px 24px 100px;
     }
