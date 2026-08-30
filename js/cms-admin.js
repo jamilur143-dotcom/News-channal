@@ -446,51 +446,57 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             if(type === 'ad-sq') {
-                const block = document.createElement('div');
-                block.className = 'canvas-block';
-                block.dataset.type = 'ad';
-                block.innerHTML = `<button class="block-del" title="Delete Block">&times;</button>
-                    <aside class="ad-inline ad-square" contenteditable="false" style="background:#f9f9f9; border:1px solid #e0e0e0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
-                        <span style="font-size:0.7rem; color:#888; text-transform:uppercase; margin-bottom:8px;">Advertisement</span>
-                        <div style="font-weight:600; color:#aaa;">Inline Square Ad<br/>(300x250)</div>
-                    </aside>`;
-                dropzone.appendChild(block);
-                bindBlock(block);
-                return;
+                // Moved to Normal Elements
             }
 
             // Normal Elements
             let targetDropzone = e.target.closest('.inner-dropzone') || e.target.closest('#dropzone');
             if(targetDropzone) {
+                let block = document.createElement('div');
+                block.className = 'canvas-block';
+                
                 if(type === 'split') {
                     if(targetDropzone.classList.contains('inner-dropzone')) {
                         alert('Cannot place a split layout inside another split layout.');
                         return;
                     }
-                    const block = document.createElement('div');
-                    block.className = 'canvas-block split-block';
+                    block.classList.add('split-block');
                     block.dataset.type = 'split';
                     block.innerHTML = `<button class="block-del" title="Delete Block">&times;</button>
                         <div class="split-container" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; padding-top:20px;">
                             <div class="inner-dropzone" style="border:1px dashed #ccc; padding:16px; min-height:100px;"></div>
                             <div class="inner-dropzone" style="border:1px dashed #ccc; padding:16px; min-height:100px;"></div>
                         </div>`;
-                    targetDropzone.appendChild(block);
-                    bindBlock(block);
                 } else {
-                    const block = document.createElement('div');
-                    block.className = 'canvas-block';
-                    block.dataset.type = type;
+                    block.dataset.type = (type === 'ad-sq') ? 'ad' : type;
 
                     let inner = '';
                     if(type === 'p') inner = '<div contenteditable="true" class="edit-text edit-p" data-type="text" placeholder="Start typing new paragraph..."></div>';
                     if(type === 'img') inner = '<div class="img-ph" style="display:flex; flex-direction:column; gap:6px; justify-content:center; align-items:center; cursor:pointer;"><span>[img] Click to upload image</span><span style="font-size:0.75rem; color:#64748b; background:#e2e8f0; padding:2px 8px; border-radius:10px; font-weight:600;">Recommended: 800 x 500 px (16:9)</span></div><img src="" style="display:none; width:100%; object-fit:cover; border-radius:4px;" /><input type="file" class="hidden-file-input" accept="image/*" style="display:none;">';
                     if(type === 'vid') inner = '<div class="vid-ph">&#9654; Click here, then set YouTube URL in the right panel</div><iframe src="" style="display:none; width:100%; aspect-ratio:16/9; border:none; border-radius:4px;" allowfullscreen></iframe>';
+                    if(type === 'ad-sq') inner = `<aside class="ad-inline ad-square" contenteditable="false" style="background:#f9f9f9; border:1px solid #e0e0e0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:250px;">
+                        <span style="font-size:0.7rem; color:#888; text-transform:uppercase; margin-bottom:8px;">Advertisement</span>
+                        <div style="font-weight:600; color:#aaa;">Inline Square Ad<br/>(300x250)</div>
+                    </aside>`;
 
                     block.innerHTML = `<button class="block-del" title="Delete Block">&times;</button>${inner}`;
-                    targetDropzone.appendChild(block);
-                    bindBlock(block);
                 }
+
+                // Determine insert position based on where user dropped it
+                const hoverBlock = e.target.closest('.canvas-block');
+                if (hoverBlock && hoverBlock.parentElement === targetDropzone) {
+                    const rect = hoverBlock.getBoundingClientRect();
+                    const midY = rect.top + rect.height / 2;
+                    if (e.clientY < midY) {
+                        hoverBlock.before(block);
+                    } else {
+                        hoverBlock.after(block);
+                    }
+                } else {
+                    targetDropzone.appendChild(block);
+                }
+                
+                bindBlock(block);
             }
         });
     }
