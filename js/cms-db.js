@@ -1,3 +1,4 @@
+// GitHub update trigger
 const DB_KEY = 'nexus_cms_articles';
 
 // Firebase Configuration
