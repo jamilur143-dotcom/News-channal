@@ -497,6 +497,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 
                 window.bindBlock(block);
+                block.click();
             }
         });
     }
