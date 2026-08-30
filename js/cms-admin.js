@@ -992,6 +992,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const isEditing = document.getElementById('main-canvas').dataset.editId;
 
+            const statusEl = document.getElementById('article-status');
+            const status = statusEl ? statusEl.value : 'Published';
+
             const article = {
                 id: isEditing || 'art-' + Date.now(),
                 template: chosenTemplate,
@@ -999,6 +1002,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 title, excerpt, category, content: finalContent, media,
                 fullHTML: fullHTML,
                 adminHTML: adminHTML,
+                status: status,
                 date: new Date().toISOString()
             };
 
@@ -1115,9 +1119,13 @@ document.addEventListener('DOMContentLoaded', () => {
             let imgHtml = art.media ? `<img src="${art.media}" class="m-card-img" />` : `<div class="m-card-img" style="display:flex;align-items:center;justify-content:center;font-size:3rem;">📰</div>`;
             const fullArticleUrl = getArticleLandingUrl(art.id || 'seed-1');
 
+            const statusBadge = art.status === 'Draft' 
+                ? '<span class="m-status-badge" style="background:#eab308; color:#fff;">Draft</span>'
+                : '<span class="m-status-badge">Published</span>';
+
             html += `
                 <div class="m-card" data-id="${art.id}">
-                    <span class="m-status-badge">Published</span>
+                    ${statusBadge}
                     ${imgHtml}
                     <div class="m-card-body">
                         <div class="m-card-cat">${art.category || 'News'}</div>
@@ -1182,6 +1190,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 newCaption.setAttribute('placeholder', 'Image Credit / Caption (Optional)');
                 existingHero.after(newCaption);
             }
+            
+            // Re-bind all blocks for interactivity
+            canvas.querySelectorAll('.canvas-block').forEach(block => {
+                if (typeof bindBlock === 'function') {
+                    bindBlock(block);
+                }
+            });
         } else if (art.fullHTML) {
             // Fallback for older articles without adminHTML
             canvas.innerHTML = art.fullHTML;
@@ -1211,6 +1226,14 @@ document.addEventListener('DOMContentLoaded', () => {
             newCaption.setAttribute('contenteditable', 'true');
             newCaption.setAttribute('placeholder', 'Image Credit / Caption (Optional)');
             existingHeroGlobal.after(newCaption);
+        }
+
+        // Restore Status Selection
+        const statusEl = document.getElementById('article-status');
+        if (statusEl && art.status) {
+            statusEl.value = art.status;
+        } else if (statusEl) {
+            statusEl.value = 'Published';
         }
 
         // 3. Restore Category Selection

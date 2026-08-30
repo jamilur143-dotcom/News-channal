@@ -17,8 +17,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     logTraffic('News Homepage', window.location.pathname);
 
-    const articles = await getArticlesAsync();
-    if (!articles || articles.length === 0) return;
+    let allArticles = await getArticlesAsync();
+    const articles = allArticles ? allArticles.filter(art => art.status !== 'Draft') : [];
+    if (articles.length === 0) return;
 
     // The most recently published article always shifts to the Hero Section
     const hero = articles[0];
