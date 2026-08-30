@@ -554,33 +554,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             delBtn.addEventListener('touchstart', removeAction, {passive: false});
         }
 
-        block.addEventListener('click', (e) => {
-            e.stopPropagation();
-            
-            // Fallback for delete button in case the direct listener was missed
-            if (e.target.closest('.block-del')) {
-                block.remove();
-                activatePanel('meta');
-                return;
-            }
+        ['click', 'focusin', 'keyup'].forEach(evt => {
+            block.addEventListener(evt, (e) => {
+                if (evt !== 'keyup') e.stopPropagation();
+                
+                // Fallback for delete button in case the direct listener was missed
+                if (evt === 'click' && e.target.closest('.block-del')) {
+                    block.remove();
+                    activatePanel('meta');
+                    return;
+                }
 
-            clearActiveStates();
-            block.classList.add('active');
-            activeBlock = block;
+                clearActiveStates();
+                block.classList.add('active');
+                activeBlock = block;
 
-            const type = block.dataset.type;
-            if(type === 'p') {
-                activatePanel('text');
-                syncTextStyles(block.querySelector('.edit-text'));
-            } else if(type === 'vid') {
-                activatePanel('vid');
-            } else if(type === 'split') {
-                activatePanel('split');
-                const ratioSelect = document.getElementById('split-layout-ratio');
-                if(ratioSelect) ratioSelect.value = block.dataset.ratio || '1:1';
-            } else {
-                activatePanel('meta');
-            }
+                const type = block.dataset.type;
+                if(type === 'p') {
+                    activatePanel('text');
+                    if (evt !== 'keyup') syncTextStyles(block.querySelector('.edit-text'));
+                } else if(type === 'vid') {
+                    activatePanel('vid');
+                } else if(type === 'split') {
+                    activatePanel('split');
+                    const ratioSelect = document.getElementById('split-layout-ratio');
+                    if(ratioSelect) ratioSelect.value = block.dataset.ratio || '1:1';
+                } else {
+                    activatePanel('meta');
+                }
+            });
         });
 
         if(block.dataset.type === 'img') {
@@ -590,13 +592,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     [defaultTitle, defaultContent, defaultHeroCaption].forEach(el => {
         if(el) {
-            el.addEventListener('click', (e) => {
-                e.stopPropagation();
-                clearActiveStates();
-                el.classList.add('active');
-                activeBlock = el;
-                activatePanel('text');
-                syncTextStyles(el);
+            ['click', 'focus', 'keyup'].forEach(evt => {
+                el.addEventListener(evt, (e) => {
+                    e.stopPropagation();
+                    clearActiveStates();
+                    el.classList.add('active');
+                    activeBlock = el;
+                    activatePanel('text');
+                    if (evt !== 'keyup') syncTextStyles(el);
+                });
             });
         }
     });
