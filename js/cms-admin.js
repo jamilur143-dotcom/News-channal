@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             headerBanner.style.backgroundPosition = 'center';
 
                             try {
-                                const cdnUrl = await uploadToCloudinary(file);
+                                const cdnUrl = await window.uploadToCloudinaryGlobal(file);
                                 headerBanner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.85)), url('${cdnUrl}')`;
                                 console.log('Template 9 header background uploaded to Cloudinary:', cdnUrl);
                             } catch(err) {
@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const CLOUDINARY_CLOUD_NAME = 'xlzab0vf';
     const CLOUDINARY_UPLOAD_PRESET = 'l1wscesh';
 
-    async function uploadToCloudinary(file) {
+    window.uploadToCloudinaryGlobal = async function(file) {
         const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
         const formData = new FormData();
         formData.append('file', file);
@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if(defaultHeroOverlay) defaultHeroOverlay.style.display = 'none';
 
                     try {
-                        const cdnUrl = await uploadToCloudinary(file);
+                        const cdnUrl = await window.uploadToCloudinaryGlobal(file);
                         defaultHeroImg.src = cdnUrl;
                         console.log('Hero image successfully uploaded to Cloudinary:', cdnUrl);
                     } catch (err) {
@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     let inner = '';
                     if(type === 'p') inner = '<div contenteditable="true" class="edit-text edit-p" data-type="text" placeholder="Start typing new paragraph..."></div>';
-                    if(type === 'img') inner = '<div class="img-ph" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:flex; flex-direction:column; gap:6px; justify-content:center; align-items:center; cursor:pointer;"><span>[img] Click to upload image</span><span style="font-size:0.75rem; color:#64748b; background:#e2e8f0; padding:2px 8px; border-radius:10px; font-weight:600;">Recommended: 800 x 500 px (16:9)</span></div><img src="" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:none; width:100%; object-fit:cover; border-radius:4px;" /><input type="file" class="hidden-file-input" accept="image/*" style="display:none;">';
+                    if(type === 'img') inner = '<div class="img-ph" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:flex; flex-direction:column; gap:6px; justify-content:center; align-items:center; cursor:pointer;"><span>[img] Click to upload image</span><span style="font-size:0.75rem; color:#64748b; background:#e2e8f0; padding:2px 8px; border-radius:10px; font-weight:600;">Recommended: 800 x 500 px (16:9)</span></div><img src="" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:none; width:100%; object-fit:cover; border-radius:4px;" /><input type="file" class="hidden-file-input" accept="image/*" style="display:none;" onchange="const f=this.files[0]; if(f){ const b=this.parentElement; const i=b.querySelector(\'img\'); const p=b.querySelector(\'.img-ph\'); i.src=URL.createObjectURL(f); i.style.display=\'block\'; p.style.display=\'none\'; window.uploadToCloudinaryGlobal(f).then(u=>i.src=u).catch(e=>alert(\'Upload failed: \'+e.message)); }">';
                     if(type === 'vid') inner = '<div class="vid-ph">&#9654; Click here, then set YouTube URL in the right panel</div><iframe src="" style="display:none; width:100%; aspect-ratio:16/9; border:none; border-radius:4px;" allowfullscreen></iframe>';
                     if(type === 'ad-sq') inner = `<aside class="ad-inline ad-square" contenteditable="false" style="background:#f9f9f9; border:1px solid #e0e0e0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:250px;">
                         <span style="font-size:0.7rem; color:#888; text-transform:uppercase; margin-bottom:8px;">Advertisement</span>
@@ -584,31 +584,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         if(block.dataset.type === 'img') {
-            const ph = block.querySelector('.img-ph');
-            const fileInput = block.querySelector('.hidden-file-input');
-            const imgEl = block.querySelector('img');
-            
-            if(ph && fileInput) {
-                fileInput.addEventListener('change', async function() {
-                    const file = this.files[0];
-                    if(file) {
-                        // Instant local preview
-                        const tempUrl = URL.createObjectURL(file);
-                        imgEl.src = tempUrl;
-                        imgEl.style.display = 'block';
-                        ph.style.display = 'none';
-
-                        try {
-                            const cdnUrl = await uploadToCloudinary(file);
-                            imgEl.src = cdnUrl;
-                            console.log('Block image uploaded to Cloudinary:', cdnUrl);
-                        } catch (err) {
-                            console.error('Cloudinary upload error:', err);
-                            alert('Cloudinary Upload Failed: ' + err.message);
-                        }
-                    }
-                });
-            }
+            // Event listeners for img-ph, img and fileInput are now handled inline via HTML attributes for maximum reliability.
         }
     }
 
