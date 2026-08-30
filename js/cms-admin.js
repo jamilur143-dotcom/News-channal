@@ -108,6 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         'template9': '400 x 480 px (Author Portrait)'
     };
 
+    function updateHeroSizeHint(tpl) {
         const size = templateImageSizes[tpl] || '1200 x 630 px';
         const badge = document.getElementById('hero-size-badge');
         if(badge) badge.textContent = `Recommended: ${size}`;
@@ -117,6 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const tplSelect = document.getElementById('template-selector');
     if(tplSelect) {
+        updateHeroSizeHint(tplSelect.value);
     }
     if (tplSelect) {
         tplSelect.addEventListener('change', (e) => {
@@ -152,6 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // 2) APPLY NEW TEMPLATE LAYOUT
             const val = e.target.value;
+            updateHeroSizeHint(val);
             if (val === 'template2') {
                 // Template 2: Title -> Meta -> Hero -> Content
                 canvas.classList.add('template-2');
@@ -1009,6 +1012,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 if (isEditing) {
+                    await updateArticle(article.id, article);
                 } else {
                     await addArticle(article);
                 }
@@ -1253,6 +1257,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Close modal
         modalManage.style.display = 'none';
         
+        alert('Article loaded into editor! Make your changes and click "Publish Live" to update.');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 });
@@ -1378,4 +1383,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
-//
