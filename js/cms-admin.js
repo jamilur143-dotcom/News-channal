@@ -828,7 +828,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const publishBtn = document.getElementById('publish-btn');
     if(publishBtn) {
         publishBtn.addEventListener('click', async () => {
-            const title = defaultTitle ? defaultTitle.innerText.trim() : '';
+            const title = defaultTitle ? defaultTitle.textContent.trim() : '';
             const media = (defaultHeroImg && defaultHeroImg.style.display !== 'none') ? defaultHeroImg.src : '';
             const catSelect = document.getElementById('news-cat');
             const category = catSelect ? catSelect.options[catSelect.selectedIndex].text : 'News';
@@ -894,7 +894,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             canvasClone.querySelectorAll('.remove-ad, .move-ad-left, .move-ad-right, .block-del, .drop-hint, .hero-subject-placeholder, #default-hero-overlay, .hidden-file-input, .t9-bg-upload-btn').forEach(el => el.remove());
 
             const clonedCaption = canvasClone.querySelector('#default-hero-caption');
-            if (clonedCaption && clonedCaption.innerText.trim() === '') {
+            if (clonedCaption && clonedCaption.textContent.trim() === '') {
                 clonedCaption.remove();
             }
 
@@ -917,7 +917,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const type = el.dataset.type;
                 if (type === 'p') {
                     const inner = el.querySelector('[data-type="text"], .edit-p, .edit-text, div');
-                    if (inner && inner.innerText.trim() !== '') {
+                    if (inner && inner.textContent.trim() !== '') {
                         const p = document.createElement('div');
                         p.className = 'article-text';
                         const existingStyle = inner.getAttribute('style') || '';
