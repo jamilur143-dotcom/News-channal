@@ -496,7 +496,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     targetDropzone.appendChild(block);
                 }
                 
-                bindBlock(block);
+                window.bindBlock(block);
             }
         });
     }
@@ -536,7 +536,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // --- 3. SELECTION & PANEL SWITCHING ---
-    function bindBlock(block) {
+    window.bindBlock = function(block) {
         block.addEventListener('click', (e) => {
             e.stopPropagation();
             
@@ -1193,8 +1193,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Re-bind all blocks for interactivity
             canvas.querySelectorAll('.canvas-block').forEach(block => {
-                if (typeof bindBlock === 'function') {
-                    bindBlock(block);
+                if (typeof window.bindBlock === 'function') {
+                    window.bindBlock(block);
                 }
             });
         } else if (art.fullHTML) {
