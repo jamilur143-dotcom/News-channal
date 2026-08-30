@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     let inner = '';
                     if(type === 'p') inner = '<div contenteditable="true" class="edit-text edit-p" data-type="text" placeholder="Start typing new paragraph..."></div>';
-                    if(type === 'img') inner = '<div class="img-ph" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:flex; flex-direction:column; gap:6px; justify-content:center; align-items:center; cursor:pointer;"><span>[img] Click to upload image</span><span style="font-size:0.75rem; color:#64748b; background:#e2e8f0; padding:2px 8px; border-radius:10px; font-weight:600;">Recommended: 800 x 500 px (16:9)</span></div><img src="" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:none; width:100%; object-fit:cover; border-radius:4px;" /><input type="file" class="hidden-file-input" accept="image/*" style="display:none;" onchange="const f=this.files[0]; if(f){ const b=this.parentElement; const i=b.querySelector(\'img\'); const p=b.querySelector(\'.img-ph\'); i.src=URL.createObjectURL(f); i.style.display=\'block\'; p.style.display=\'none\'; window.uploadToCloudinaryGlobal(f).then(u=>i.src=u).catch(e=>alert(\'Upload failed: \'+e.message)); }">';
+                    if(type === 'img') inner = '<div class="img-ph" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:flex; flex-direction:column; gap:6px; justify-content:center; align-items:center; cursor:pointer;"><span>[img] Click to upload image</span><span style="font-size:0.75rem; color:#64748b; background:#e2e8f0; padding:2px 8px; border-radius:10px; font-weight:600;">Recommended: 800 x 500 px (16:9)</span></div><img src="" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:none; width:100%; object-fit:cover; border-radius:4px;" /><input type="file" class="hidden-file-input" accept="image/*" style="display:none;">';
                     if(type === 'vid') inner = '<div class="vid-ph">&#9654; Click here, then set YouTube URL in the right panel</div><iframe src="" style="display:none; width:100%; aspect-ratio:16/9; border:none; border-radius:4px;" allowfullscreen></iframe>';
                     if(type === 'ad-sq') inner = `<aside class="ad-inline ad-square" contenteditable="false" style="background:#f9f9f9; border:1px solid #e0e0e0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:250px;">
                         <span style="font-size:0.7rem; color:#888; text-transform:uppercase; margin-bottom:8px;">Advertisement</span>
@@ -1373,3 +1373,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+document.addEventListener('change', async (e) => {
+    if (e.target && e.target.classList.contains('hidden-file-input')) {
+        const file = e.target.files[0];
+        if (file) {
+            const block = e.target.closest('.canvas-block');
+            if (block) {
+                const imgEl = block.querySelector('img');
+                const ph = block.querySelector('.img-ph');
+                
+                if (imgEl) {
+                    imgEl.src = URL.createObjectURL(file);
+                    imgEl.style.display = 'block';
+                }
+                if (ph) {
+                    ph.style.display = 'none';
+                }
+                
+                try {
+                    const cdnUrl = await window.uploadToCloudinaryGlobal(file);
+                    if (imgEl) imgEl.src = cdnUrl;
+                    console.log('Block image uploaded to Cloudinary:', cdnUrl);
+                } catch (err) {
+                    console.error('Cloudinary upload error:', err);
+                    alert('Cloudinary Upload Failed: ' + err.message);
+                }
+            }
+        }
+    }
+});
+
