@@ -779,116 +779,215 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (ratio === '1:1') container.style.gridTemplateColumns = '1fr 1fr';
                 else if (ratio === '1:2') container.style.gridTemplateColumns = '1fr 2fr';
                 else if (ratio === '2:1') container.style.gridTemplateColumns = '2fr 1fr';
+    }
+
+    // --- PLAIN TEXT PASTE ---
+    document.addEventListener('paste', (e) => {
+        if (e.target.closest('.visual-canvas') && e.target.isContentEditable) {
+            e.preventDefault();
+            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            document.execCommand('insertText', false, text);
+        }
+    });
+
+    
+
+    const splitRatioSelect = document.getElementById('split-layout-ratio');
+    if (splitRatioSelect) {
+        splitRatioSelect.addEventListener('change', e => {
+            if (activeBlock && activeBlock.dataset.type === 'split') {
+                const ratio = e.target.value;
+                activeBlock.dataset.ratio = ratio;
+                const container = activeBlock.querySelector('.split-container');
+                
+                let currentCols = container.querySelectorAll('.inner-dropzone').length;
+                let targetCols = ratio === '1:1:1' ? 3 : 2;
+                
+                while(currentCols < targetCols) {
+                    const newCol = document.createElement('div');
+                    newCol.className = 'inner-dropzone';
+                    newCol.style = 'border:1px dashed #ccc; padding:16px; min-height:100px;';
+                    container.appendChild(newCol);
+                    currentCols++;
+                }
+                while(currentCols > targetCols) {
+                    if (container.lastElementChild.classList.contains('inner-dropzone')) {
+                        container.lastElementChild.remove();
+                        currentCols--;
+                    } else { break; }
+                }
+                
+                if (ratio === '1:1') container.style.gridTemplateColumns = '1fr 1fr';
+                else if (ratio === '1:2') container.style.gridTemplateColumns = '1fr 2fr';
+                else if (ratio === '2:1') container.style.gridTemplateColumns = '2fr 1fr';
                 else if (ratio === '1:1:1') container.style.gridTemplateColumns = '1fr 1fr 1fr';
             }
         });
     }
 
     // --- 4. FORMATTING CONTROLS ---
-    function applyFormat(cmd, val) {
-        const sel = window.getSelection();
-        const hasSelection = sel.rangeCount > 0 && !sel.isCollapsed && document.getElementById('main-canvas').contains(sel.anchorNode);
 
-        if (hasSelection) {
-            document.execCommand(cmd, false, val);
-        } else if (activeBlock) {
-            const target = activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text');
-            if (!target) return;
-
-            if (cmd === 'bold') {
-                target.style.fontWeight = (target.style.fontWeight === 'bold' || parseInt(target.style.fontWeight) > 600) ? 'normal' : 'bold';
-            } else if (cmd === 'italic') {
-                target.style.fontStyle = target.style.fontStyle === 'italic' ? 'normal' : 'italic';
-            } else if (cmd === 'underline') {
-                target.style.textDecoration = target.style.textDecoration === 'underline' ? 'none' : 'underline';
-            } else if (cmd === 'justifyLeft') target.style.textAlign = 'left';
-            else if (cmd === 'justifyCenter') target.style.textAlign = 'center';
-            else if (cmd === 'justifyRight') target.style.textAlign = 'right';
-            else if (cmd === 'justifyFull') target.style.textAlign = 'justify';
-            else if (cmd === 'foreColor') target.style.color = val;
-            else if (cmd === 'fontName') target.style.fontFamily = val;
-            else if (cmd === 'fontSizePx') { target.style.fontSize = val + 'px'; const heading = target.querySelector('h1, h2, h3, h4, h5, h6'); if(heading) heading.style.fontSize = val + 'px'; }
-            else if (cmd === 'formatBlock') { 
-                if(target.id && target.id.startsWith('default-')) return;
-                if(target.closest('.meta-data')) return;
-                document.execCommand(cmd, false, val); 
+    // ─── CRITICAL FIX: Prevent the right panel from stealing keyboard focus ───
+    // When a user interacts with ANY control in #panel-text (sliders, dropdowns,
+    // color pickers), the browser normally transfers focus away from the canvas
+    // element, losing the selection. preventDefault() on 'mousedown' stops this.
+    const panelText = document.getElementById('panel-text');
+    if (panelText) {
+        panelText.addEventListener('mousedown', (e) => {
+            // Allow the control itself to receive pointer/value events but DO NOT
+            // let it steal focus from the canvas. The exception is <select> and
+            // <input type="text"> which need real focus to open their UI.
+            const tag = e.target.tagName.toLowerCase();
+            const type = (e.target.type || '').toLowerCase();
+            // Only block focus-steal for sliders, color pickers, buttons, checkboxes
+            if (tag === 'input' && (type === 'range' || type === 'color' || type === 'number' || type === 'checkbox')) {
+                e.preventDefault();
             }
+            if (tag === 'button') {
+                e.preventDefault();
+            }
+        });
+    }
+
+    // ─── Helper: get the actual text element to style ────────────────────────
+    function getActiveTarget() {
+        if (!activeBlock) return null;
+        // If activeBlock IS the text element (e.g. #default-title, .meta-data strong)
+        if (activeBlock.isContentEditable || activeBlock.classList.contains('edit-text')) {
+            return activeBlock;
         }
+        // For canvas-block wrappers, find the editable child
+        return activeBlock.querySelector('.edit-text') || activeBlock;
+    }
+
+    // ─── Core apply function ─────────────────────────────────────────────────
+    function applyFormat(cmd, val) {
+        const target = getActiveTarget();
+        if (!target) return;
+
+        switch (cmd) {
+            case 'bold':
+                const isBold = window.getComputedStyle(target).fontWeight;
+                target.style.fontWeight = (parseInt(isBold) >= 700 || isBold === 'bold') ? 'normal' : 'bold';
+                break;
+            case 'italic':
+                target.style.fontStyle = window.getComputedStyle(target).fontStyle === 'italic' ? 'normal' : 'italic';
+                break;
+            case 'underline':
+                target.style.textDecoration = window.getComputedStyle(target).textDecorationLine === 'underline' ? 'none' : 'underline';
+                break;
+            case 'justifyLeft':   target.style.textAlign = 'left';    break;
+            case 'justifyCenter': target.style.textAlign = 'center';  break;
+            case 'justifyRight':  target.style.textAlign = 'right';   break;
+            case 'justifyFull':   target.style.textAlign = 'justify'; break;
+            case 'foreColor':
+                target.style.color = val;
+                // Also apply to inner headings if present
+                const headings = target.querySelectorAll('h1,h2,h3,h4,h5,h6');
+                headings.forEach(h => h.style.color = val);
+                break;
+            case 'fontName':
+                target.style.fontFamily = val;
+                break;
+            case 'fontSizePx':
+                target.style.fontSize = val + 'px';
+                // Also set on inner heading so it overrides UA stylesheet
+                const innerH = target.querySelector('h1,h2,h3,h4,h5,h6');
+                if (innerH) innerH.style.fontSize = val + 'px';
+                break;
+            case 'letterSpacing':
+                target.style.letterSpacing = val + 'px';
+                break;
+            case 'lineHeight':
+                target.style.lineHeight = val;
+                break;
+            case 'width': {
+                const wrapper = target.closest('.canvas-block') || target;
+                wrapper.style.width = val + '%';
+                break;
+            }
+            case 'minHeight': {
+                const wrapper = target.closest('.canvas-block') || target;
+                wrapper.style.minHeight = val ? (val + 'px') : 'auto';
+                break;
+            }
+            case 'formatBlock':
+                if (target.id && target.id.startsWith('default-')) break;
+                if (target.closest && target.closest('.meta-data')) break;
+                document.execCommand('formatBlock', false, val);
+                break;
+        }
+
+        // Re-sync the panel display after each change
         setTimeout(() => syncTextStyles(activeBlock), 10);
     }
 
+    // ─── Style buttons (Bold, Italic, Underline, Alignment) ─────────────────
     document.querySelectorAll('.fmt-btn').forEach(btn => {
         btn.addEventListener('mousedown', (e) => {
-            e.preventDefault();
+            e.preventDefault(); // already prevents focus steal
             applyFormat(btn.dataset.cmd, null);
         });
     });
 
+    // ─── Text type (block format) ─────────────────────────────────────────────
     const blockSelect = document.getElementById('fmt-block');
-    if(blockSelect) blockSelect.addEventListener('change', e => applyFormat('formatBlock', e.target.value));
+    if (blockSelect) {
+        blockSelect.addEventListener('mousedown', (e) => e.stopPropagation()); // don't bubble to panelText
+        blockSelect.addEventListener('change', e => applyFormat('formatBlock', e.target.value));
+    }
 
+    // ─── Font family ─────────────────────────────────────────────────────────
     const fontSelect = document.getElementById('fmt-font');
-    if(fontSelect) fontSelect.addEventListener('change', e => applyFormat('fontName', e.target.value));
+    if (fontSelect) {
+        fontSelect.addEventListener('mousedown', (e) => e.stopPropagation());
+        fontSelect.addEventListener('change', e => applyFormat('fontName', e.target.value));
+    }
 
+    // ─── Text color ───────────────────────────────────────────────────────────
     const colorPicker = document.getElementById('fmt-color');
-    if(colorPicker) colorPicker.addEventListener('input', e => applyFormat('foreColor', e.target.value));
+    if (colorPicker) {
+        colorPicker.addEventListener('input', e => applyFormat('foreColor', e.target.value));
+    }
 
+    // ─── Font size (slider + number input, two-way synced) ────────────────────
     const sizeSlider = document.getElementById('fmt-size-slider');
-    const sizeInput = document.getElementById('fmt-size-input');
-    
-    if(sizeSlider) {
+    const sizeInput  = document.getElementById('fmt-size-input');
+
+    if (sizeSlider) {
         sizeSlider.addEventListener('input', e => {
-            if(sizeInput) sizeInput.value = e.target.value;
+            if (sizeInput) sizeInput.value = e.target.value;
             applyFormat('fontSizePx', e.target.value);
         });
     }
-    if(sizeInput) {
+    if (sizeInput) {
         sizeInput.addEventListener('input', e => {
-            if(sizeSlider) sizeSlider.value = e.target.value;
+            if (sizeSlider) sizeSlider.value = e.target.value;
             applyFormat('fontSizePx', e.target.value);
         });
     }
 
+    // ─── Tracking (letter-spacing) ─────────────────────────────────────────
     const trackingSlider = document.getElementById('fmt-tracking');
-    if(trackingSlider) {
-        trackingSlider.addEventListener('input', e => {
-            if(activeBlock) {
-                const target = activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text');
-                if(target) target.style.letterSpacing = e.target.value + 'px';
-            }
-        });
+    if (trackingSlider) {
+        trackingSlider.addEventListener('input', e => applyFormat('letterSpacing', e.target.value));
     }
 
+    // ─── Leading (line-height) ─────────────────────────────────────────────
     const leadingSlider = document.getElementById('fmt-leading');
-    if(leadingSlider) {
-        leadingSlider.addEventListener('input', e => {
-            if(activeBlock) {
-                const target = activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text');
-                if(target) target.style.lineHeight = e.target.value;
-            }
-        });
+    if (leadingSlider) {
+        leadingSlider.addEventListener('input', e => applyFormat('lineHeight', e.target.value));
     }
 
+    // ─── Width & Min-Height ────────────────────────────────────────────────
     const widthInput = document.getElementById('fmt-width');
-    if(widthInput) {
-        widthInput.addEventListener('input', e => {
-            if(activeBlock) {
-                // Determine if activeBlock is a text block or the parent wrapper.
-                // Usually width is set on the wrapper (.canvas-block) or the element itself if it's default.
-                const target = activeBlock.closest('.canvas-block') || activeBlock;
-                target.style.width = e.target.value + '%';
-            }
-        });
+    if (widthInput) {
+        widthInput.addEventListener('input', e => applyFormat('width', e.target.value));
     }
 
     const heightInput = document.getElementById('fmt-height');
-    if(heightInput) {
-        heightInput.addEventListener('input', e => {
-            if(activeBlock) {
-                const target = activeBlock.closest('.canvas-block') || activeBlock;
-                target.style.minHeight = e.target.value ? (e.target.value + 'px') : 'auto';
-            }
-        });
+    if (heightInput) {
+        heightInput.addEventListener('input', e => applyFormat('minHeight', e.target.value));
     }
 
     // --- 5. VIDEO SETTINGS ---
@@ -1560,3 +1659,10 @@ document.addEventListener('change', async (e) => {
 
 
 
+
+
+
+
+
+    }
+}); // close main DOMContentLoaded extra braces
