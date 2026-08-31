@@ -606,7 +606,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Use event delegation for default text elements so they survive DOM replacement during "Edit Article"
     ['click', 'focusin', 'keyup'].forEach(evt => {
         document.addEventListener(evt, (e) => {
-            const target = e.target.closest('#default-title, #default-content, #default-hero-caption');
+            const target = e.target.closest('#default-title, #default-content, #default-hero-caption, .meta-data .edit-text');
             if (target) {
                 // For keyup, let it bubble so global listeners aren't blocked, but handle our logic.
                 if (evt !== 'keyup') e.stopPropagation();
@@ -701,6 +701,43 @@ document.addEventListener('DOMContentLoaded', async () => {
             if(minH && minH.includes('px')) hInput.value = parseFloat(minH);
             else hInput.value = '';
         }
+
+        // Sync Block Type
+        const blockSelect = document.getElementById('fmt-block');
+        if(blockSelect) {
+            const tagName = (innerHeading || el).tagName.toUpperCase();
+            if(tagName === 'DIV' || tagName === 'SPAN' || tagName === 'P') blockSelect.value = 'P';
+            else blockSelect.value = tagName;
+        }
+
+        // Sync Font Family
+        const fontSelect = document.getElementById('fmt-font');
+        if(fontSelect && computed.fontFamily) {
+            // Try to match the exact string, or use the first font name
+            const fontList = computed.fontFamily.split(',');
+            const primaryFont = fontList[0].trim().replace(/['"]/g, '');
+            // We'll just loop and find the closest match
+            for(let i=0; i<fontSelect.options.length; i++) {
+                if(fontSelect.options[i].value.includes(primaryFont)) {
+                    fontSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+
+        // Sync formatting buttons (bold, italic, underline, alignment)
+        document.querySelectorAll('.fmt-btn').forEach(btn => {
+            const cmd = btn.dataset.cmd;
+            btn.classList.remove('active');
+            if (cmd === 'bold' && (computed.fontWeight === 'bold' || parseInt(computed.fontWeight) >= 700)) btn.classList.add('active');
+            if (cmd === 'italic' && computed.fontStyle === 'italic') btn.classList.add('active');
+            if (cmd === 'underline' && computed.textDecorationLine === 'underline') btn.classList.add('active');
+            
+            if (cmd === 'justifyLeft' && computed.textAlign === 'left') btn.classList.add('active');
+            if (cmd === 'justifyCenter' && computed.textAlign === 'center') btn.classList.add('active');
+            if (cmd === 'justifyRight' && computed.textAlign === 'right') btn.classList.add('active');
+            if (cmd === 'justifyFull' && computed.textAlign === 'justify') btn.classList.add('active');
+        });
     }
 
     // --- PLAIN TEXT PASTE ---
@@ -771,8 +808,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             else if (cmd === 'foreColor') target.style.color = val;
             else if (cmd === 'fontName') target.style.fontFamily = val;
             else if (cmd === 'fontSizePx') { target.style.fontSize = val + 'px'; const heading = target.querySelector('h1, h2, h3, h4, h5, h6'); if(heading) heading.style.fontSize = val + 'px'; }
-            else if (cmd === 'formatBlock') { document.execCommand(cmd, false, val); setTimeout(() => syncTextStyles(activeBlock), 10); } 
+            else if (cmd === 'formatBlock') { 
+                if(target.id && target.id.startsWith('default-')) return;
+                if(target.closest('.meta-data')) return;
+                document.execCommand(cmd, false, val); 
+            }
         }
+        setTimeout(() => syncTextStyles(activeBlock), 10);
     }
 
     document.querySelectorAll('.fmt-btn').forEach(btn => {
@@ -1512,6 +1554,9 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
+
+
 
 
 

@@ -84,8 +84,9 @@
 
     /* SETTINGS */
     .fmt-row { display: flex; flex-wrap: wrap; gap: 8px; }
-    .fmt-btn { padding: 8px 12px; border: 1px solid var(--border); background: #fff; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 0.9rem; color: #334155; display: flex; align-items: center; justify-content: center; }
+    .fmt-btn { padding: 8px 12px; border: 1px solid var(--border); background: #fff; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 0.9rem; color: #334155; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
     .fmt-btn:hover { background: #f1f5f9; }
+    .fmt-btn.active { background: #1A237E; color: #fff; border-color: #1A237E; }
     
   </style>
 </head>
@@ -223,20 +224,6 @@
 
           <!-- 2-COLUMN ARTICLE LAYOUT -->
           <div class="article-layout-wrapper">
-            
-            <main class="article-container">
-              
-              <h1 contenteditable="true" id="default-title" class="edit-text" placeholder="Type your main headline here..."></h1>
-              
-              <div class="meta-data">
-                <span><small>Date</small><strong>Oct 14, 2026</strong></span>
-                <span><small>Category</small><strong>Technology</strong></span>
-                <span><small>Author</small><strong>Nexus Editorial</strong></span>
-              </div>
-  
-              <div contenteditable="true" id="default-content" class="edit-text edit-p" placeholder="Start writing your intro paragraph here..."></div>
-              
-              <div id="dropzone">
                  <div class="drop-hint">Drop extra paragraphs, images, videos, and square ads here...</div>
               </div>
             </main>
@@ -583,6 +570,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="../js/admin.js"></script>
 <script src="../js/cms-db.js"></script>
-<script src="../js/cms-admin.js?v=15"></script>
+<script src="../js/cms-admin.js?v=16"></script>
 </body>
 </html>
+
