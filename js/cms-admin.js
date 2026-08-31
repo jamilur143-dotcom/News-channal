@@ -862,6 +862,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ─── Core apply function ─────────────────────────────────────────────────
     function applyFormat(cmd, val) {
+        const sel = window.getSelection();
+        const hasSelection = sel.rangeCount > 0 && !sel.isCollapsed && document.getElementById('main-canvas').contains(sel.anchorNode);
+
+        if (hasSelection && ['bold', 'italic', 'underline', 'foreColor', 'fontName'].includes(cmd)) {
+            document.execCommand(cmd, false, val);
+            setTimeout(() => syncTextStyles(activeBlock), 10);
+            return;
+        }
+
         const target = getActiveTarget();
         if (!target) return;
 
@@ -882,18 +891,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             case 'justifyFull':   target.style.textAlign = 'justify'; break;
             case 'foreColor':
                 target.style.color = val;
-                // Also apply to inner headings if present
-                const headings = target.querySelectorAll('h1,h2,h3,h4,h5,h6');
-                headings.forEach(h => h.style.color = val);
+                target.querySelectorAll('h1,h2,h3,h4,h5,h6,strong,b,i,em,span').forEach(child => child.style.color = val);
                 break;
             case 'fontName':
                 target.style.fontFamily = val;
+                target.querySelectorAll('*').forEach(child => child.style.fontFamily = val);
                 break;
             case 'fontSizePx':
                 target.style.fontSize = val + 'px';
-                // Also set on inner heading so it overrides UA stylesheet
-                const innerH = target.querySelector('h1,h2,h3,h4,h5,h6');
-                if (innerH) innerH.style.fontSize = val + 'px';
+                target.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => h.style.fontSize = val + 'px');
                 break;
             case 'letterSpacing':
                 target.style.letterSpacing = val + 'px';
@@ -914,10 +920,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             case 'formatBlock':
                 if (target.id && target.id.startsWith('default-')) break;
                 if (target.closest && target.closest('.meta-data')) break;
-                document.execCommand('formatBlock', false, val);
+                
+                const newTag = val.toUpperCase();
+                if (target.tagName === newTag) break;
+                
+                const newEl = document.createElement(newTag);
+                Array.from(target.attributes).forEach(attr => newEl.setAttribute(attr.name, attr.value));
+                newEl.innerHTML = target.innerHTML;
+                
+                target.parentNode.replaceChild(newEl, target);
+                
+                if (activeBlock === target) {
+                    activeBlock = newEl;
+                }
+                newEl.focus();
                 break;
         }
-
         // Re-sync the panel display after each change
         setTimeout(() => syncTextStyles(activeBlock), 10);
     }
@@ -1666,3 +1684,6 @@ document.addEventListener('change', async (e) => {
 
     }
 }); // close main DOMContentLoaded extra braces
+
+
+

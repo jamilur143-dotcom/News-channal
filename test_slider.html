@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <div id="editable" contenteditable="true">Text</div>
+  <div id="panel" style="padding:20px; border:1px solid black;">
+    <input type="range" id="slider" min="1" max="100" />
+  </div>
+  <script>
+    document.getElementById('panel').addEventListener('mousedown', e => {
+       if(e.target.tagName === 'INPUT') e.preventDefault();
+    });
+    document.getElementById('slider').addEventListener('input', e => {
+       document.getElementById('editable').style.fontSize = e.target.value + 'px';
+    });
+  </script>
+</body>
+</html>
