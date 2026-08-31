@@ -976,24 +976,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (blockTarget) {
+            // Helper to strip conflicting inner inline styles so the block-level style works
+            const stripInnerStyle = (cssProp) => {
+                blockTarget.querySelectorAll('*').forEach(el => {
+                    if (el.style) el.style[cssProp] = '';
+                });
+            };
+
             switch (cmd) {
                 case 'bold':
                     blockTarget.style.fontWeight = (window.getComputedStyle(blockTarget).fontWeight >= 700) ? 'normal' : 'bold';
+                    stripInnerStyle('fontWeight');
                     break;
                 case 'italic':
                     blockTarget.style.fontStyle = (window.getComputedStyle(blockTarget).fontStyle === 'italic') ? 'normal' : 'italic';
+                    stripInnerStyle('fontStyle');
                     break;
                 case 'underline':
                     blockTarget.style.textDecoration = (window.getComputedStyle(blockTarget).textDecorationLine.includes('underline')) ? 'none' : 'underline';
+                    stripInnerStyle('textDecoration');
+                    stripInnerStyle('textDecorationLine');
                     break;
                 case 'foreColor':
                     blockTarget.style.color = val;
+                    stripInnerStyle('color');
+                    blockTarget.querySelectorAll('font').forEach(f => f.removeAttribute('color'));
                     break;
                 case 'fontName':
                     blockTarget.style.fontFamily = val;
+                    stripInnerStyle('fontFamily');
+                    blockTarget.querySelectorAll('font').forEach(f => f.removeAttribute('face'));
                     break;
                 case 'fontSizePx':
                     blockTarget.style.fontSize = val + 'px';
+                    stripInnerStyle('fontSize');
+                    blockTarget.querySelectorAll('font').forEach(f => f.removeAttribute('size'));
                     break;
             }
         }
@@ -1741,6 +1758,7 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
 
 
 
