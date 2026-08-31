@@ -794,55 +794,127 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // --- 4. FORMATTING CONTROLS ---
+        // --- 4. FORMATTING CONTROLS ---
 
-    // ─── CRITICAL FIX: Prevent the right panel from stealing keyboard focus ───
-    // When a user interacts with ANY control in #panel-text (sliders, dropdowns,
-    // color pickers), the browser normally transfers focus away from the canvas
-    // element, losing the selection. preventDefault() on 'mousedown' stops this.
-    // --- Prevent panel buttons from stealing focus, but allow inputs/color/select ---
+    // ═══════════════════════════════════════════════════════════════════════════
+    // FIX #1: Prevent ALL panel interactions from stealing canvas focus.
+    // We call e.preventDefault() on EVERY mousedown inside #panel-text.
+    // For sliders and color pickers, we manually drive their native behaviour
+    // so the canvas never loses its selection or blinking cursor.
+    // ═══════════════════════════════════════════════════════════════════════════
     const panelText = document.getElementById('panel-text');
     if (panelText) {
         panelText.addEventListener('mousedown', (e) => {
-            const tag = e.target.tagName.toLowerCase();
-            const type = (e.target.type || '').toLowerCase();
-            // Don't preventDefault for input, select, textarea so native controls (color picker, sliders, dropdowns) work 100% reliably
-            if (tag === 'input' || tag === 'select' || tag === 'textarea' || tag === 'option') {
-                return;
-            }
-            // For buttons like Bold, Italic, Alignment, prevent focus stealing so selection stays alive
+            // ALWAYS prevent default — this is the key fix.
             e.preventDefault();
+
+            const target = e.target;
+            const tag = target.tagName.toLowerCase();
+            const type = (target.type || '').toLowerCase();
+
+            // Manual slider drag (range inputs break under preventDefault)
+            if (tag === 'input' && type === 'range') {
+                const updateSlider = (evt) => {
+                    const rect = target.getBoundingClientRect();
+                    let pct = (evt.clientX - rect.left) / rect.width;
+                    pct = Math.max(0, Math.min(1, pct));
+                    const min = parseFloat(target.min) || 0;
+                    const max = parseFloat(target.max) || 100;
+                    const step = parseFloat(target.step) || 1;
+                    let raw = min + pct * (max - min);
+                    raw = Math.round(raw / step) * step;
+                    target.value = raw;
+                    target.dispatchEvent(new Event('input', { bubbles: true }));
+                };
+                updateSlider(e);
+                const onMove = (evt) => updateSlider(evt);
+                const onUp = () => {
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onUp);
+                    target.dispatchEvent(new Event('change', { bubbles: true }));
+                };
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            }
+
+            // Color picker — open it via .click() after a tick
+            if (tag === 'input' && type === 'color') {
+                setTimeout(() => target.click(), 0);
+            }
+
+            // Number inputs — focus them after a tick so user can type
+            if (tag === 'input' && type === 'number') {
+                setTimeout(() => target.focus(), 0);
+            }
+
+            // Dropdowns — use showPicker or fallback focus
+            if (tag === 'select') {
+                setTimeout(() => {
+                    if (typeof target.showPicker === 'function') {
+                        try { target.showPicker(); } catch(_) { target.focus(); }
+                    } else {
+                        target.focus();
+                    }
+                }, 0);
+            }
         });
     }
 
-    // --- Direct, Bulletproof Selection & Formatting System ---
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SELECTION MEMORY: Continuously capture the canvas selection/range so we
+    // can restore it after focus shifts to panel controls.
+    // ═══════════════════════════════════════════════════════════════════════════
     let savedCanvasRange = null;
 
-    // Continuously capture selection inside the canvas
     function updateCanvasSelection() {
         const sel = window.getSelection();
         if (sel && sel.rangeCount > 0) {
             const range = sel.getRangeAt(0);
             const canvas = document.getElementById('main-canvas');
-            if (canvas && (canvas.contains(range.commonAncestorContainer) || canvas.contains(sel.anchorNode))) {
+            if (canvas && canvas.contains(range.startContainer)) {
                 savedCanvasRange = range.cloneRange();
             }
         }
     }
 
     document.addEventListener('selectionchange', updateCanvasSelection);
-    ['mouseup', 'keyup', 'touchend', 'selectstart'].forEach(evt => {
-        document.addEventListener(evt, updateCanvasSelection);
-    });
+    document.addEventListener('mouseup', updateCanvasSelection);
+    document.addEventListener('keyup', updateCanvasSelection);
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // HELPER: Forcefully restore the saved canvas range into the live selection.
+    // This MUST be called before any Range API or style operation.
+    // ═══════════════════════════════════════════════════════════════════════════
+    function restoreCanvasSelection() {
+        if (!savedCanvasRange) return null;
+        const sel = window.getSelection();
+        // Refocus the contentEditable element that owns the range
+        let editableHost = savedCanvasRange.startContainer;
+        if (editableHost.nodeType === 3) editableHost = editableHost.parentNode;
+        const editable = editableHost.closest('[contenteditable="true"]');
+        if (editable && typeof editable.focus === 'function') {
+            editable.focus();
+        }
+        sel.removeAllRanges();
+        sel.addRange(savedCanvasRange);
+        return savedCanvasRange;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // FIX #2 & #3: applyFormat — uses native DOM Range API for inline styles.
+    // No document.execCommand for font-size, color, or font-name.
+    // ═══════════════════════════════════════════════════════════════════════════
     function applyFormat(cmd, val) {
+        // Step 1: Restore canvas focus + selection before doing anything
+        restoreCanvasSelection();
+
         const sel = window.getSelection();
         const canvas = document.getElementById('main-canvas');
-        
+
         let rangeToUse = null;
         let isCollapsed = true;
 
-        if (sel && sel.rangeCount > 0 && canvas && (canvas.contains(sel.anchorNode) || canvas.contains(sel.focusNode))) {
+        if (sel && sel.rangeCount > 0 && canvas && canvas.contains(sel.anchorNode)) {
             rangeToUse = sel.getRangeAt(0);
             isCollapsed = sel.isCollapsed;
         } else if (savedCanvasRange) {
@@ -850,7 +922,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             isCollapsed = savedCanvasRange.collapsed;
         }
 
-        // --- BLOCK LEVEL COMMANDS (Alignment, Headings, Spacing, Dimensions) ---
+        // ── BLOCK LEVEL COMMANDS ──────────────────────────────────────────────
         const blockCommands = ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'letterSpacing', 'lineHeight', 'width', 'minHeight', 'formatBlock'];
         if (blockCommands.includes(cmd)) {
             let target = null;
@@ -872,13 +944,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 case 'letterSpacing': target.style.letterSpacing = val + 'px'; break;
                 case 'lineHeight':    target.style.lineHeight = val; break;
                 case 'width': {
-                    const wWrap = target.closest('.canvas-block') || target;
-                    wWrap.style.width = val + '%';
+                    const w = target.closest('.canvas-block') || target;
+                    w.style.width = val + '%';
                     break;
                 }
                 case 'minHeight': {
-                    const hWrap = target.closest('.canvas-block') || target;
-                    hWrap.style.minHeight = val ? (val + 'px') : 'auto';
+                    const h = target.closest('.canvas-block') || target;
+                    h.style.minHeight = val ? (val + 'px') : 'auto';
                     break;
                 }
                 case 'formatBlock': {
@@ -887,84 +959,114 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const newTag = val.toUpperCase();
                     if (target.tagName === newTag) break;
                     const newEl = document.createElement(newTag);
-                    Array.from(target.attributes).forEach(attr => newEl.setAttribute(attr.name, attr.value));
+                    Array.from(target.attributes).forEach(a => newEl.setAttribute(a.name, a.value));
                     newEl.innerHTML = target.innerHTML;
                     target.parentNode.replaceChild(newEl, target);
                     if (activeBlock === target) activeBlock = newEl;
                     break;
                 }
             }
+            setTimeout(() => syncTextStyles(activeBlock), 10);
             return;
         }
 
-        // --- INLINE FORMATTING (Color, Font Size, Font Family, Bold, Italic, Underline) ---
-        // 1. If text is highlighted (selection): apply ONLY to the highlighted slice
+        // ── INLINE COMMANDS ───────────────────────────────────────────────────
+        // Helper: map cmd → CSS property name + value
+        function getCSSForCmd(command, value) {
+            switch (command) {
+                case 'foreColor':   return { prop: 'color',      css: value };
+                case 'fontSizePx':  return { prop: 'fontSize',   css: value + 'px' };
+                case 'fontName':    return { prop: 'fontFamily',  css: value };
+                case 'bold':        return { prop: 'fontWeight',  css: null }; // toggle
+                case 'italic':      return { prop: 'fontStyle',   css: null }; // toggle
+                case 'underline':   return { prop: 'textDecoration', css: null }; // toggle
+                default: return null;
+            }
+        }
+
+        // ── MODE A: Text is highlighted (non-collapsed selection) ─────────────
+        // Use native Range API: extractContents → wrap in <span> → insertNode
         if (rangeToUse && !isCollapsed) {
-            let targetElement = null;
-            let node = rangeToUse.commonAncestorContainer;
-            if (node.nodeType === 3) node = node.parentNode;
-            targetElement = node.closest('.edit-text') || node.closest('.visual-canvas');
-            if (targetElement && typeof targetElement.focus === 'function') {
-                targetElement.focus();
-            }
+            const mapping = getCSSForCmd(cmd, val);
+            if (!mapping) return;
 
-            try {
+            if (mapping.css !== null) {
+                // Non-toggle commands: color, fontSize, fontFamily
+                const span = document.createElement('span');
+                span.style[mapping.prop] = mapping.css;
+                // Extract highlighted content, wrap it, insert it back
+                const fragment = rangeToUse.extractContents();
+                // Flatten any inner spans with the same property to avoid nesting
+                fragment.querySelectorAll('span').forEach(inner => {
+                    inner.style[mapping.prop] = '';
+                });
+                fragment.querySelectorAll('font').forEach(f => {
+                    if (mapping.prop === 'color') f.removeAttribute('color');
+                    if (mapping.prop === 'fontSize') f.removeAttribute('size');
+                    if (mapping.prop === 'fontFamily') f.removeAttribute('face');
+                });
+                span.appendChild(fragment);
+                rangeToUse.insertNode(span);
+                // Set selection around the new span so further changes work
+                const newRange = document.createRange();
+                newRange.selectNodeContents(span);
                 sel.removeAllRanges();
-                sel.addRange(rangeToUse);
-            } catch(e) {}
+                sel.addRange(newRange);
+                savedCanvasRange = newRange.cloneRange();
+            } else {
+                // Toggle commands: bold, italic, underline
+                const fragment = rangeToUse.extractContents();
+                const span = document.createElement('span');
+                // Determine toggle state from the first text node
+                let firstText = fragment.querySelector('*') || fragment;
+                let temp = document.createElement('span');
+                temp.appendChild(firstText.cloneNode(false));
+                document.body.appendChild(temp);
+                const cs = window.getComputedStyle(temp);
 
-            try {
-                document.execCommand('styleWithCSS', false, true);
-            } catch(e) {}
-
-            switch (cmd) {
-                case 'bold':
-                    document.execCommand('bold', false, null);
-                    break;
-                case 'italic':
-                    document.execCommand('italic', false, null);
-                    break;
-                case 'underline':
-                    document.execCommand('underline', false, null);
-                    break;
-                case 'foreColor':
-                    document.execCommand('foreColor', false, val);
-                    break;
-                case 'fontName':
-                    document.execCommand('fontName', false, val);
-                    break;
-                case 'fontSizePx': {
-                    try {
-                        document.execCommand('styleWithCSS', false, false);
-                        document.execCommand('fontSize', false, '7');
-                        const fontEls = canvas ? canvas.querySelectorAll('font[size="7"]') : [];
-                        fontEls.forEach(f => {
-                            const span = document.createElement('span');
-                            span.style.fontSize = val + 'px';
-                            span.innerHTML = f.innerHTML;
-                            f.parentNode.replaceChild(span, f);
-                        });
-                        document.execCommand('styleWithCSS', false, true);
-                    } catch(err) {
-                        try {
-                            const span = document.createElement('span');
-                            span.style.fontSize = val + 'px';
-                            const frag = rangeToUse.extractContents();
-                            span.appendChild(frag);
-                            rangeToUse.insertNode(span);
-                        } catch(e2) {}
+                if (cmd === 'bold') {
+                    // Check existing content's weight
+                    let isBold = false;
+                    const existingSpans = fragment.querySelectorAll('span, strong, b');
+                    if (existingSpans.length > 0) {
+                        isBold = true; // assume bold if wrapped
                     }
-                    break;
+                    span.style.fontWeight = isBold ? 'normal' : 'bold';
+                    fragment.querySelectorAll('span, strong, b').forEach(el => {
+                        if (el.style) el.style.fontWeight = '';
+                    });
+                } else if (cmd === 'italic') {
+                    let isItalic = false;
+                    const existingEls = fragment.querySelectorAll('span, em, i');
+                    if (existingEls.length > 0) isItalic = true;
+                    span.style.fontStyle = isItalic ? 'normal' : 'italic';
+                    fragment.querySelectorAll('span, em, i').forEach(el => {
+                        if (el.style) el.style.fontStyle = '';
+                    });
+                } else if (cmd === 'underline') {
+                    let isUnder = false;
+                    const existingEls = fragment.querySelectorAll('span, u');
+                    if (existingEls.length > 0) isUnder = true;
+                    span.style.textDecoration = isUnder ? 'none' : 'underline';
+                    fragment.querySelectorAll('span, u').forEach(el => {
+                        if (el.style) el.style.textDecoration = '';
+                    });
                 }
-            }
+                temp.remove();
 
-            if (sel && sel.rangeCount > 0) {
-                savedCanvasRange = sel.getRangeAt(0).cloneRange();
+                span.appendChild(fragment);
+                rangeToUse.insertNode(span);
+                const newRange = document.createRange();
+                newRange.selectNodeContents(span);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+                savedCanvasRange = newRange.cloneRange();
             }
+            setTimeout(() => syncTextStyles(activeBlock), 10);
             return;
         }
 
-        // 2. If NO text is highlighted (cursor only / block clicked): apply directly to the active text block!
+        // ── MODE B: Blinking cursor only (collapsed) — apply to whole block ───
         let blockTarget = null;
         if (rangeToUse) {
             let node = rangeToUse.commonAncestorContainer;
@@ -976,45 +1078,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (blockTarget) {
-            // Helper to strip conflicting inner inline styles so the block-level style works
-            const stripInnerStyle = (cssProp) => {
+            const stripInner = (cssProp) => {
                 blockTarget.querySelectorAll('*').forEach(el => {
                     if (el.style) el.style[cssProp] = '';
                 });
+            };
+            const stripFontAttr = (attr) => {
+                blockTarget.querySelectorAll('font').forEach(f => f.removeAttribute(attr));
             };
 
             switch (cmd) {
                 case 'bold':
                     blockTarget.style.fontWeight = (window.getComputedStyle(blockTarget).fontWeight >= 700) ? 'normal' : 'bold';
-                    stripInnerStyle('fontWeight');
+                    stripInner('fontWeight');
                     break;
                 case 'italic':
                     blockTarget.style.fontStyle = (window.getComputedStyle(blockTarget).fontStyle === 'italic') ? 'normal' : 'italic';
-                    stripInnerStyle('fontStyle');
+                    stripInner('fontStyle');
                     break;
                 case 'underline':
                     blockTarget.style.textDecoration = (window.getComputedStyle(blockTarget).textDecorationLine.includes('underline')) ? 'none' : 'underline';
-                    stripInnerStyle('textDecoration');
-                    stripInnerStyle('textDecorationLine');
+                    stripInner('textDecoration');
+                    stripInner('textDecorationLine');
                     break;
                 case 'foreColor':
                     blockTarget.style.color = val;
-                    stripInnerStyle('color');
-                    blockTarget.querySelectorAll('font').forEach(f => f.removeAttribute('color'));
+                    stripInner('color');
+                    stripFontAttr('color');
                     break;
                 case 'fontName':
                     blockTarget.style.fontFamily = val;
-                    stripInnerStyle('fontFamily');
-                    blockTarget.querySelectorAll('font').forEach(f => f.removeAttribute('face'));
+                    stripInner('fontFamily');
+                    stripFontAttr('face');
                     break;
                 case 'fontSizePx':
                     blockTarget.style.fontSize = val + 'px';
-                    stripInnerStyle('fontSize');
-                    blockTarget.querySelectorAll('font').forEach(f => f.removeAttribute('size'));
+                    stripInner('fontSize');
+                    stripFontAttr('size');
                     break;
             }
         }
+        setTimeout(() => syncTextStyles(activeBlock), 10);
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // EVENT LISTENERS: Wire panel controls → applyFormat
+    // ═══════════════════════════════════════════════════════════════════════════
 
     // --- Style buttons (Bold, Italic, Underline, Alignment) -----------------
     document.querySelectorAll('.fmt-btn').forEach(btn => {
@@ -1022,41 +1131,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             e.preventDefault();
             applyFormat(btn.dataset.cmd, null);
         });
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            applyFormat(btn.dataset.cmd, null);
-        });
     });
 
-    // --- Text type (block format) ---------------------------------------------
+    // --- Text type (block format) -------------------------------------------
     const blockSelect = document.getElementById('fmt-block');
     if (blockSelect) {
         blockSelect.addEventListener('change', e => applyFormat('formatBlock', e.target.value));
     }
 
-    // --- Font family ---------------------------------------------------------
+    // --- Font family --------------------------------------------------------
     const fontSelect = document.getElementById('fmt-font');
     if (fontSelect) {
         fontSelect.addEventListener('change', e => applyFormat('fontName', e.target.value));
     }
 
-    // --- Text color (input + change) ------------------------------------------
+    // --- Text color (real-time via input + change) --------------------------
     const colorPicker = document.getElementById('fmt-color');
     if (colorPicker) {
         colorPicker.addEventListener('input', e => applyFormat('foreColor', e.target.value));
         colorPicker.addEventListener('change', e => applyFormat('foreColor', e.target.value));
     }
 
-    // --- Font size (slider + number input, two-way synced) --------------------
+    // --- Font size slider + number input (real-time via input) ---------------
     const sizeSlider = document.getElementById('fmt-size-slider');
     const sizeInput  = document.getElementById('fmt-size-input');
 
     if (sizeSlider) {
         sizeSlider.addEventListener('input', e => {
-            if (sizeInput) sizeInput.value = e.target.value;
-            applyFormat('fontSizePx', e.target.value);
-        });
-        sizeSlider.addEventListener('change', e => {
             if (sizeInput) sizeInput.value = e.target.value;
             applyFormat('fontSizePx', e.target.value);
         });
@@ -1066,25 +1167,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (sizeSlider) sizeSlider.value = e.target.value;
             applyFormat('fontSizePx', e.target.value);
         });
-        sizeInput.addEventListener('change', e => {
-            if (sizeSlider) sizeSlider.value = e.target.value;
-            applyFormat('fontSizePx', e.target.value);
-        });
     }
 
-    // --- Tracking (letter-spacing) -----------------------------------------
+    // --- Tracking (letter-spacing) ------------------------------------------
     const trackingSlider = document.getElementById('fmt-tracking');
     if (trackingSlider) {
         trackingSlider.addEventListener('input', e => applyFormat('letterSpacing', e.target.value));
     }
 
-    // --- Leading (line-height) ---------------------------------------------
+    // --- Leading (line-height) ----------------------------------------------
     const leadingSlider = document.getElementById('fmt-leading');
     if (leadingSlider) {
         leadingSlider.addEventListener('input', e => applyFormat('lineHeight', e.target.value));
     }
 
-    // --- Width & Min-Height ------------------------------------------------
+    // --- Width & Min-Height -------------------------------------------------
     const widthInput = document.getElementById('fmt-width');
     if (widthInput) {
         widthInput.addEventListener('input', e => applyFormat('width', e.target.value));
