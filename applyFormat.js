@@ -1,5 +1,7 @@
     // Track canvas selection to prevent loss when panel controls are used
     let savedCanvasRange = null;
+    
+    // Listen to selectionchange but ONLY save if the selection is valid inside canvas
     document.addEventListener('selectionchange', () => {
         const sel = window.getSelection();
         if (sel.rangeCount > 0) {
@@ -17,15 +19,19 @@
         let isCollapsed = true;
 
         const canvas = document.getElementById('main-canvas');
-        if (sel.rangeCount > 0 && canvas && canvas.contains(sel.anchorNode)) {
+        
+        // Use native selection if it's not collapsed and inside canvas
+        if (sel.rangeCount > 0 && canvas && canvas.contains(sel.anchorNode) && !sel.isCollapsed) {
             activeRange = sel.getRangeAt(0);
-            isCollapsed = sel.isCollapsed;
-        } else if (savedCanvasRange) {
+            isCollapsed = false;
+        } 
+        // Fallback to saved selection (crucial because clicking panel controls often collapses native selection)
+        else if (savedCanvasRange) {
             activeRange = savedCanvasRange;
             isCollapsed = savedCanvasRange.collapsed;
         }
 
-        if (!activeRange) return; // No selection or cursor in canvas ever
+        if (!activeRange) return;
 
         const blockCommands = ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'letterSpacing', 'lineHeight', 'width', 'minHeight', 'formatBlock'];
         
@@ -75,58 +81,48 @@
         }
 
         // --- 2. INLINE / SELECTION COMMANDS ---
-        if (isCollapsed) return; // Strict directive: Do nothing if no text is highlighted
+        if (isCollapsed) return;
 
-        const applySpanStyle = (cssProp, cssVal) => {
-            try {
-                const span = document.createElement('span');
-                span.style[cssProp] = cssVal;
-                const contents = activeRange.extractContents();
-                span.appendChild(contents);
-                activeRange.insertNode(span);
-                
-                // Re-select
-                sel.removeAllRanges();
-                const newRange = document.createRange();
-                newRange.selectNodeContents(span);
-                sel.addRange(newRange);
-                savedCanvasRange = newRange.cloneRange(); // update stored
-            } catch (e) {
-                console.error("Selection wrapping error:", e);
-            }
-        };
+        // Restore selection globally so execCommand targets it!
+        sel.removeAllRanges();
+        sel.addRange(activeRange);
+
+        // Enable CSS styling for execCommand
+        document.execCommand('styleWithCSS', false, true);
 
         switch (cmd) {
             case 'bold':
-                let isBold = false;
-                let pNode = activeRange.commonAncestorContainer;
-                if(pNode.nodeType === 3) pNode = pNode.parentNode;
-                if(window.getComputedStyle(pNode).fontWeight >= 700) isBold = true;
-                applySpanStyle('fontWeight', isBold ? 'normal' : 'bold');
+                document.execCommand('bold', false, null);
                 break;
             case 'italic':
-                let isItal = false;
-                let iNode = activeRange.commonAncestorContainer;
-                if(iNode.nodeType === 3) iNode = iNode.parentNode;
-                if(window.getComputedStyle(iNode).fontStyle === 'italic') isItal = true;
-                applySpanStyle('fontStyle', isItal ? 'normal' : 'italic');
+                document.execCommand('italic', false, null);
                 break;
             case 'underline':
-                let isUnd = false;
-                let uNode = activeRange.commonAncestorContainer;
-                if(uNode.nodeType === 3) uNode = uNode.parentNode;
-                if(window.getComputedStyle(uNode).textDecorationLine.includes('underline')) isUnd = true;
-                applySpanStyle('textDecoration', isUnd ? 'none' : 'underline');
+                document.execCommand('underline', false, null);
                 break;
             case 'foreColor':
-                applySpanStyle('color', val);
+                document.execCommand('foreColor', false, val);
                 break;
             case 'fontName':
-                applySpanStyle('fontFamily', val);
+                document.execCommand('fontName', false, val);
                 break;
             case 'fontSizePx':
-                applySpanStyle('fontSize', val + 'px');
+                document.execCommand('styleWithCSS', false, false);
+                document.execCommand('fontSize', false, '7');
+                const fonts = canvas.querySelectorAll('font[size="7"]');
+                fonts.forEach(f => {
+                    const span = document.createElement('span');
+                    span.style.fontSize = val + 'px';
+                    span.innerHTML = f.innerHTML;
+                    f.parentNode.replaceChild(span, f);
+                });
+                document.execCommand('styleWithCSS', false, true);
                 break;
+        }
+
+        // Re-save the active range after DOM modification
+        if (sel.rangeCount > 0) {
+            savedCanvasRange = sel.getRangeAt(0).cloneRange();
         }
         setTimeout(() => syncTextStyles(activeBlock), 10);
     }

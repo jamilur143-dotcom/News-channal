@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<body>
+<div id="main-canvas" contenteditable="true" style="border: 1px solid black; padding: 20px;">
+    fdgfdgbfsdg
+</div>
+<script>
+    const canvas = document.getElementById('main-canvas');
+    canvas.focus();
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(canvas.firstChild);
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    document.execCommand('styleWithCSS', false, false);
+    document.execCommand('fontSize', false, '7');
+    console.log("HTML:", canvas.innerHTML);
+</script>
+</body>
+</html>
