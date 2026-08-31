@@ -794,110 +794,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // --- 4. FORMATTING CONTROLS (BLOCK-LEVEL APPROACH) ---
-    (function initBlockFormatting() {
-        // Helper: Find the active editable text block
-        function getActiveTextNode() {
-            if (!activeBlock) return null;
-            return activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text') || activeBlock;
-        }
-
-        // 1. INLINE STYLES (Bold, Italic, Underline) - Uses standard execCommand on mousedown
-        document.querySelectorAll('.fmt-btn').forEach(btn => {
-            btn.addEventListener('mousedown', e => {
-                e.preventDefault(); // Prevent focus loss for these specific buttons
-                const cmd = btn.dataset.cmd;
-                
-                if (['bold', 'italic', 'underline'].includes(cmd)) {
-                    document.execCommand(cmd, false, null);
-                } else if (['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'].includes(cmd)) {
-                    const target = getActiveTextNode();
-                    if (target) {
-                        if (cmd === 'justifyLeft') target.style.textAlign = 'left';
-                        if (cmd === 'justifyCenter') target.style.textAlign = 'center';
-                        if (cmd === 'justifyRight') target.style.textAlign = 'right';
-                        if (cmd === 'justifyFull') target.style.textAlign = 'justify';
-                    }
-                }
-            });
-        });
-
-        // 2. BLOCK STYLES (Color, Size, Sliders, Dropdowns) - Applies directly to the element's CSS
-        function applyBlockStyle(cssProperty, value) {
-            const target = getActiveTextNode();
-            if (target) {
-                target.style[cssProperty] = value;
-            }
-        }
-
-        // Color Picker (Triggers on both input and change for OS-level dialogs)
-        const colorPicker = document.getElementById('fmt-color');
-        if (colorPicker) {
-            colorPicker.addEventListener('input', e => applyBlockStyle('color', e.target.value));
-            colorPicker.addEventListener('change', e => applyBlockStyle('color', e.target.value));
-        }
-
-        // Font Size (Slider + Input Sync)
-        const sizeSlider = document.getElementById('fmt-size-slider');
-        const sizeInput = document.getElementById('fmt-size-input');
-        if (sizeSlider && sizeInput) {
-            sizeSlider.addEventListener('input', e => {
-                sizeInput.value = e.target.value;
-                applyBlockStyle('fontSize', e.target.value + 'px');
-            });
-            sizeInput.addEventListener('input', e => {
-                sizeSlider.value = e.target.value;
-                applyBlockStyle('fontSize', e.target.value + 'px');
-            });
-        }
-
-        // Font Family
-        const fontDrop = document.getElementById('fmt-font');
-        if (fontDrop) fontDrop.addEventListener('change', e => applyBlockStyle('fontFamily', e.target.value));
-
-        // Tracking (Letter Spacing)
-        const trackSlider = document.getElementById('fmt-tracking');
-        if (trackSlider) trackSlider.addEventListener('input', e => applyBlockStyle('letterSpacing', e.target.value + 'px'));
-
-        // Leading (Line Height)
-        const leadSlider = document.getElementById('fmt-leading');
-        if (leadSlider) leadSlider.addEventListener('input', e => applyBlockStyle('lineHeight', e.target.value));
-
-        // Dimensions (Width & Height)
-        const widthInput = document.getElementById('fmt-width');
-        if (widthInput) widthInput.addEventListener('input', e => {
-            const wWrap = activeBlock ? (activeBlock.closest('.canvas-block') || activeBlock) : null;
-            if (wWrap) wWrap.style.width = e.target.value + '%';
-        });
-
-        const heightInput = document.getElementById('fmt-height');
-        if (heightInput) heightInput.addEventListener('input', e => {
-            const hWrap = activeBlock ? (activeBlock.closest('.canvas-block') || activeBlock) : null;
-            if (hWrap) hWrap.style.minHeight = e.target.value ? (e.target.value + 'px') : 'auto';
-        });
-
-        // Block Type (HTML Tag Conversion)
-        const blockSelect = document.getElementById('fmt-block');
-        if (blockSelect) {
-            blockSelect.addEventListener('change', e => {
-                const target = getActiveTextNode();
-                if (!target || (target.id && target.id.startsWith('default-')) || target.closest('.meta-data')) return;
-                
-                const newTag = e.target.value.toUpperCase();
-                if (target.tagName === newTag) return;
-                
-                const newEl = document.createElement(newTag);
-                Array.from(target.attributes).forEach(attr => newEl.setAttribute(attr.name, attr.value));
-                newEl.innerHTML = target.innerHTML;
-                target.parentNode.replaceChild(newEl, target);
-                
-                if (activeBlock === target || activeBlock.contains(target)) {
-                    activeBlock = newEl;
-                }
-            });
-        }
-    })();
-
         // --- 5. VIDEO SETTINGS ---
     const vidUrl = document.getElementById('vid-url');
     const btnSetVid = document.getElementById('btn-set-vid');
@@ -1561,6 +1457,7 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
 
 
 
