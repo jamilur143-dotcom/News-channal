@@ -831,143 +831,102 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ── Core Format Function ──────────────────────────────────────────────────
-    function applyFormat(cmd, val) {
-
-        // Step A & B: Restore focus and selection
-        restoreSelection();
-
+        function applyFormat(cmd, val) {
         const sel = window.getSelection();
+        const canvas = document.getElementById('main-canvas');
+        
+        // Find the active target block to force focus
+        let target = activeBlock ? (activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text') || activeBlock) : null;
 
-        // Identify the target block for block-level commands
-        let targetBlock = null;
-        if (savedRange) {
-            let node = savedRange.commonAncestorContainer;
-            if (node.nodeType === 3) node = node.parentNode;
-            targetBlock = node.closest('.edit-text') || node.closest('.canvas-block');
-        }
-        if (!targetBlock && activeBlock) {
-            targetBlock = activeBlock.classList.contains('edit-text')
-                ? activeBlock
-                : (activeBlock.querySelector('.edit-text') || activeBlock);
+        // 1. FORCE FOCUS: execCommand will silently fail in modern browsers if the canvas isn't actively focused
+        if (target && typeof target.focus === 'function') {
+            target.focus();
         }
 
-        // ── Block-level commands (applied to the container element) ───────
-        switch (cmd) {
-            case 'justifyLeft':
-                if (targetBlock) targetBlock.style.textAlign = 'left';
-                return;
-            case 'justifyCenter':
-                if (targetBlock) targetBlock.style.textAlign = 'center';
-                return;
-            case 'justifyRight':
-                if (targetBlock) targetBlock.style.textAlign = 'right';
-                return;
-            case 'justifyFull':
-                if (targetBlock) targetBlock.style.textAlign = 'justify';
-                return;
-            case 'letterSpacing':
-                if (targetBlock) targetBlock.style.letterSpacing = val + 'px';
-                return;
-            case 'lineHeight':
-                if (targetBlock) targetBlock.style.lineHeight = val;
-                return;
-            case 'width':
-                if (targetBlock) {
-                    const w = targetBlock.closest('.canvas-block') || targetBlock;
-                    w.style.width = val + '%';
-                }
-                return;
-            case 'minHeight':
-                if (targetBlock) {
-                    const h = targetBlock.closest('.canvas-block') || targetBlock;
-                    h.style.minHeight = val ? (val + 'px') : 'auto';
-                }
-                return;
-            case 'formatBlock':
-                if (targetBlock) {
-                    if (targetBlock.id && targetBlock.id.startsWith('default-')) return;
-                    if (targetBlock.closest('.meta-data')) return;
+        let activeRange = null;
+        let isCollapsed = true;
+
+        // Prioritize native selection, fallback to saved tracking range
+        if (sel.rangeCount > 0 && canvas && canvas.contains(sel.anchorNode)) {
+            activeRange = sel.getRangeAt(0);
+            isCollapsed = sel.isCollapsed;
+        } else if (savedRange) {
+            activeRange = savedRange;
+            isCollapsed = savedRange.collapsed;
+            sel.removeAllRanges();
+            sel.addRange(activeRange);
+        }
+
+        if (!target) return;
+
+        // 2. BLOCK LEVEL COMMANDS (Alignment, Layout, Tags)
+        const blockCommands = ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'letterSpacing', 'lineHeight', 'width', 'minHeight', 'formatBlock'];
+        if (blockCommands.includes(cmd)) {
+            switch (cmd) {
+                case 'justifyLeft':   target.style.textAlign = 'left';    break;
+                case 'justifyCenter': target.style.textAlign = 'center';  break;
+                case 'justifyRight':  target.style.textAlign = 'right';   break;
+                case 'justifyFull':   target.style.textAlign = 'justify'; break;
+                case 'letterSpacing': target.style.letterSpacing = val + 'px'; break;
+                case 'lineHeight':    target.style.lineHeight = val; break;
+                case 'width':
+                    const wWrap = target.closest('.canvas-block') || target;
+                    wWrap.style.width = val + '%';
+                    break;
+                case 'minHeight':
+                    const hWrap = target.closest('.canvas-block') || target;
+                    hWrap.style.minHeight = val ? (val + 'px') : 'auto';
+                    break;
+                case 'formatBlock':
+                    if (target.id && target.id.startsWith('default-')) break;
+                    if (target.closest('.meta-data')) break;
                     const newTag = val.toUpperCase();
-                    if (targetBlock.tagName === newTag) return;
+                    if (target.tagName === newTag) break;
                     const newEl = document.createElement(newTag);
-                    Array.from(targetBlock.attributes).forEach(a => newEl.setAttribute(a.name, a.value));
-                    newEl.innerHTML = targetBlock.innerHTML;
-                    targetBlock.parentNode.replaceChild(newEl, targetBlock);
-                    if (activeBlock === targetBlock) activeBlock = newEl;
-                }
-                return;
+                    Array.from(target.attributes).forEach(attr => newEl.setAttribute(attr.name, attr.value));
+                    newEl.innerHTML = target.innerHTML;
+                    target.parentNode.replaceChild(newEl, target);
+                    if (activeBlock === target) activeBlock = newEl;
+                    break;
+            }
+            setTimeout(() => { if (typeof syncTextStyles === 'function') syncTextStyles(activeBlock); }, 10);
+            return;
         }
 
-        // ── Inline commands ───────────────────────────────────────────────
-        // If user has highlighted text → apply via execCommand to selection
-        if (savedRange && !savedRange.collapsed) {
+        // 3. INLINE COMMANDS (Color, Font Size, Bold, Italic)
+        if (!isCollapsed && activeRange) {
+            // Apply exactly to the highlighted text
             document.execCommand('styleWithCSS', false, true);
-
-            switch (cmd) {
-                case 'bold':
-                    document.execCommand('bold', false, null);
-                    break;
-                case 'italic':
-                    document.execCommand('italic', false, null);
-                    break;
-                case 'underline':
-                    document.execCommand('underline', false, null);
-                    break;
-                case 'foreColor':
-                    document.execCommand('foreColor', false, val);
-                    break;
-                case 'fontName':
-                    document.execCommand('fontName', false, val);
-                    break;
-                case 'fontSizePx':
-                    document.execCommand('fontSize', false, '7');
-                    const canvas = document.getElementById('main-canvas');
-                    if (canvas) {
-                        canvas.querySelectorAll('font[size="7"]').forEach(f => {
-                            const span = document.createElement('span');
-                            span.style.fontSize = val + 'px';
-                            while (f.firstChild) span.appendChild(f.firstChild);
-                            f.parentNode.replaceChild(span, f);
-                        });
-                    }
-                    break;
+            
+            if (cmd === 'fontSizePx') {
+                const span = document.createElement('span');
+                span.style.fontSize = val + 'px';
+                span.appendChild(activeRange.extractContents());
+                activeRange.insertNode(span);
+            } else if (cmd === 'fontName') {
+                const span = document.createElement('span');
+                span.style.fontFamily = val;
+                span.appendChild(activeRange.extractContents());
+                activeRange.insertNode(span);
+            } else {
+                document.execCommand(cmd, false, val);
             }
-
-            // Re-save the range after DOM modification
-            const newSel = window.getSelection();
-            if (newSel.rangeCount > 0) {
-                savedRange = newSel.getRangeAt(0);
-            }
+            
+            if (sel.rangeCount > 0) savedRange = sel.getRangeAt(0).cloneRange();
+            
+        } else {
+            // 4. FALLBACK: No text highlighted (cursor is just blinking). 
+            // Apply the style to the entire active block instead of doing nothing.
+            if (cmd === 'fontSizePx') target.style.fontSize = val + 'px';
+            if (cmd === 'fontName') target.style.fontFamily = val;
+            if (cmd === 'foreColor') target.style.color = val;
+            if (cmd === 'bold') target.style.fontWeight = (target.style.fontWeight === 'bold' || parseInt(window.getComputedStyle(target).fontWeight) >= 700) ? 'normal' : 'bold';
+            if (cmd === 'italic') target.style.fontStyle = (target.style.fontStyle === 'italic') ? 'normal' : 'italic';
+            if (cmd === 'underline') target.style.textDecoration = (target.style.textDecoration.includes('underline')) ? 'none' : 'underline';
         }
-        // If cursor is blinking (no highlight) → apply to the whole block
-        else if (targetBlock) {
-            switch (cmd) {
-                case 'bold':
-                    targetBlock.style.fontWeight = (window.getComputedStyle(targetBlock).fontWeight >= 700) ? 'normal' : 'bold';
-                    break;
-                case 'italic':
-                    targetBlock.style.fontStyle = (window.getComputedStyle(targetBlock).fontStyle === 'italic') ? 'normal' : 'italic';
-                    break;
-                case 'underline': {
-                    const dl = window.getComputedStyle(targetBlock).textDecorationLine;
-                    targetBlock.style.textDecoration = dl.includes('underline') ? 'none' : 'underline';
-                    break;
-                }
-                case 'foreColor':
-                    targetBlock.style.color = val;
-                    break;
-                case 'fontName':
-                    targetBlock.style.fontFamily = val;
-                    break;
-                case 'fontSizePx':
-                    targetBlock.style.fontSize = val + 'px';
-                    break;
-            }
-        }
-
-        setTimeout(() => syncTextStyles(activeBlock), 10);
+        
+        setTimeout(() => { if (typeof syncTextStyles === 'function') syncTextStyles(activeBlock); }, 10);
     }
-
     // ── Event Listeners: Wire panel controls → applyFormat ────────────────────
 
     // Style buttons (Bold, Italic, Underline, Alignment)
@@ -1698,6 +1657,7 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
 
 
 
