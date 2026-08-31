@@ -76,9 +76,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Dynamic Panels
     const panels = {
-        'meta': document.getElementById('panel-meta'),
+        
         'text': document.getElementById('panel-text'),
-        'vid': document.getElementById('panel-vid')
+        'vid': document.getElementById('panel-vid'),
+        'split': document.getElementById('panel-split')
     };
     
     // Default Template Nodes
@@ -633,6 +634,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     function activatePanel(type) {
+        if(type === 'meta') type = 'text'; // Fallback to editing panel
         Object.values(panels).forEach(p => {
             if(p) p.style.display = 'none';
         });
@@ -684,6 +686,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(colorPicker && computed.color) {
             let hex = rgbToHex(computed.color);
             if(hex.startsWith('#')) colorPicker.value = hex;
+        }
+
+        const parentBlock = el.closest('.canvas-block') || el;
+        const wInput = document.getElementById('fmt-width');
+        if(wInput) {
+            const w = parentBlock.style.width;
+            if(w && w.includes('%')) wInput.value = parseFloat(w);
+            else wInput.value = 100;
+        }
+        const hInput = document.getElementById('fmt-height');
+        if(hInput) {
+            const minH = parentBlock.style.minHeight;
+            if(minH && minH.includes('px')) hInput.value = parseFloat(minH);
+            else hInput.value = '';
         }
     }
 
@@ -807,6 +823,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             if(activeBlock) {
                 const target = activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text');
                 if(target) target.style.lineHeight = e.target.value;
+            }
+        });
+    }
+
+    const widthInput = document.getElementById('fmt-width');
+    if(widthInput) {
+        widthInput.addEventListener('input', e => {
+            if(activeBlock) {
+                // Determine if activeBlock is a text block or the parent wrapper.
+                // Usually width is set on the wrapper (.canvas-block) or the element itself if it's default.
+                const target = activeBlock.closest('.canvas-block') || activeBlock;
+                target.style.width = e.target.value + '%';
+            }
+        });
+    }
+
+    const heightInput = document.getElementById('fmt-height');
+    if(heightInput) {
+        heightInput.addEventListener('input', e => {
+            if(activeBlock) {
+                const target = activeBlock.closest('.canvas-block') || activeBlock;
+                target.style.minHeight = e.target.value ? (e.target.value + 'px') : 'auto';
             }
         });
     }
@@ -1109,6 +1147,32 @@ document.addEventListener('DOMContentLoaded', () => {
             if (saveAdsBtnGlobal) {
                 saveAdsBtnGlobal.addEventListener('click', () => {
                     modalAdSettings.style.display = 'none';
+                });
+            }
+        }
+        
+        // --- Meta Data Modal Logic ---
+        const btnMetaData = document.getElementById('btn-open-meta-data');
+        const modalMetaData = document.getElementById('meta-data-modal');
+        const btnCloseMetaData = document.getElementById('meta-data-modal-close');
+        
+        if (btnMetaData && modalMetaData) {
+            btnMetaData.addEventListener('click', () => {
+                modalMetaData.style.display = 'flex';
+            });
+            btnCloseMetaData.addEventListener('click', () => {
+                modalMetaData.style.display = 'none';
+            });
+            modalMetaData.addEventListener('click', (e) => {
+                if (e.target === modalMetaData) {
+                    modalMetaData.style.display = 'none';
+                }
+            });
+            const saveMetaBtn = document.getElementById('btn-save-meta');
+            if (saveMetaBtn) {
+                saveMetaBtn.addEventListener('click', () => {
+                    modalMetaData.style.display = 'none';
+                    // We don't need to explicitly save it here, as it's saved when published.
                 });
             }
         }
@@ -1448,4 +1512,6 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
+
 

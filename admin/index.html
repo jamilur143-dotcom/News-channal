@@ -113,6 +113,9 @@
           <option value="template8">Template 8: Split Cover (Side-by-Side)</option>
           <option value="template9">Template 9: Editor's Note (Magazine)</option>
         </select>
+        <button type="button" class="btn btn-outline btn-sm" id="btn-open-meta-data" style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:1.1rem;">&#9881;</span> Meta Data
+        </button>
         <button type="button" class="btn btn-outline btn-sm" id="btn-open-ad-settings" style="display:flex; align-items:center; gap:6px;">
             <span style="font-size:1.1rem;">&#128176;</span> Ad Settings
         </button>
@@ -268,36 +271,12 @@
 
         <div id="dynamic-panels" class="mt-16" style="order: 1; margin-bottom: 20px;">
           
-          <!-- Meta Data -->
-          <div id="panel-meta" class="form-panel" style="display:block;">
-            <div class="form-panel-header"><h3>&#9881; Meta Data</h3></div>
-            <div class="form-panel-body">
-               <div class="field-group">
-                  <label class="field-label">Category</label>
-                  <select id="news-cat" class="field-input field-select">
-                    <option value="world">World</option>
-                    <option value="politics">Politics</option>
-                    <option value="technology">Technology</option>
-                    <option value="sports">Sports</option>
-                  </select>
-               </div>
-               <div class="field-group">
-                  <label class="field-label">Status</label>
-                  <select id="article-status" class="field-input field-select">
-                    <option value="Published" selected>Published</option>
-                    <option value="Draft">Draft</option>
-                  </select>
-               </div>
-               <div class="field-group">
-                  <label class="field-label">Short Excerpt</label>
-                  <textarea id="news-excerpt" class="field-input" rows="3" placeholder="Grid preview text..."></textarea>
-               </div>
-            </div>
+          
           </div>
 
           <!-- Text Formatting -->
-          <div id="panel-text" class="form-panel" style="display:none;">
-            <div class="form-panel-header"><h3>&#9998; Text Formatting</h3></div>
+          <div id="panel-text" class="form-panel" style="display:block;">
+            <div class="form-panel-header"><h3>&#9998; Editing Panel</h3></div>
             <div class="form-panel-body">
               
               <!-- Block Type -->
@@ -381,6 +360,18 @@
                 <label class="field-label">Leading (Line Height)</label>
                 <input type="range" id="fmt-leading" min="1" max="3" step="0.1" value="1.8" style="width:100%;">
                 <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#888; margin-top:4px;"><span>Tight</span><span>Loose</span></div>
+              </div>
+
+              <!-- Dimensions -->
+              <div class="field-group" style="display:flex; gap:12px;">
+                <div style="flex:1;">
+                    <label class="field-label">Width (%)</label>
+                    <input type="number" id="fmt-width" min="10" max="100" value="100" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; font-family:'Inter',sans-serif; text-align:center;">
+                </div>
+                <div style="flex:1;">
+                    <label class="field-label">Min Height (px)</label>
+                    <input type="number" id="fmt-height" min="10" max="1000" placeholder="Auto" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; font-family:'Inter',sans-serif; text-align:center;">
+                </div>
               </div>
 
             </div>
@@ -556,12 +547,42 @@
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div id="meta-data-modal" class="manage-modal-overlay">
+  <div class="manage-modal-content" style="max-width: 500px; height: auto; border-radius: 12px; margin-top: 10vh; margin-bottom: auto; background: #f8fafc;">
+    <div class="manage-modal-header" style="padding: 20px; border-bottom: 1px solid #e2e8f0; border-radius: 12px 12px 0 0;">
+      <h2 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0; display:flex; align-items:center; gap:8px;"><span>&#9881;</span> Meta Data</h2>
+      <button class="manage-modal-close" id="meta-data-modal-close" title="Close" style="font-size: 2rem;">&times;</button>
+    </div>
+    <div style="padding: 24px; background: #fff; border-radius: 0 0 12px 12px;">
+       <div class="field-group" style="margin-bottom: 16px;">
+          <label class="field-label">Category</label>
+          <select id="news-cat" class="field-input field-select">
+            <option value="world">World</option>
+            <option value="politics">Politics</option>
+            <option value="technology">Technology</option>
+            <option value="sports">Sports</option>
+          </select>
+       </div>
+       <div class="field-group" style="margin-bottom: 16px;">
+          <label class="field-label">Status</label>
+          <select id="article-status" class="field-input field-select">
+            <option value="Published" selected>Published</option>
+            <option value="Draft">Draft</option>
+          </select>
+       </div>
+       <div class="field-group" style="margin-bottom: 24px;">
+          <label class="field-label">Short Excerpt</label>
+          <textarea id="news-excerpt" class="field-input" rows="4" placeholder="Grid preview text..."></textarea>
+       </div>
+      <button class="btn btn-publish" id="btn-save-meta" style="width:100%; padding: 12px; font-size: 1rem;">&#128190; Save Meta Data</button>
+    </div>
+  </div>
+</div>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="../js/admin.js"></script>
 <script src="../js/cms-db.js"></script>
-<script src="../js/cms-admin.js?v=14"></script>
+<script src="../js/cms-admin.js?v=15"></script>
 </body>
 </html>
-
