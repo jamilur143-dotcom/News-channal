@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <div id="editable" contenteditable="true">Highlight this text</div>
+  <input type="color" id="picker" />
+  <script>
+    document.getElementById('picker').addEventListener('mousedown', e => {
+      e.preventDefault();
+    });
+  </script>
+</body>
+</html>
