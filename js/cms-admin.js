@@ -794,99 +794,147 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // --- 4. FORMATTING CONTROLS (DIRECT STYLE INJECTION) ---
-    // Make sure NO panel-wide mousedown preventDefault exists!
+    // --- 4. FORMATTING CONTROLS (BULLETPROOF FIX) ---
+    (function initFormatting() {
+        let savedRange = null;
+        let activeEl = null;
 
-    // Helper to get the actual text element
-    function getActiveTextTarget() {
-        if (!activeBlock) return null;
-        return activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text') || activeBlock;
-    }
-
-    // A. BUTTONS (Bold, Italic, Underline, Alignment)
-    // Use mousedown.preventDefault() ONLY on these buttons so the canvas doesn't lose text selection
-    document.querySelectorAll('.fmt-btn').forEach(btn => {
-        btn.addEventListener('mousedown', e => e.preventDefault()); 
-        btn.addEventListener('click', e => {
-            e.preventDefault();
-            const cmd = btn.dataset.cmd;
-            const target = getActiveTextTarget();
-            if (!target) return;
-
-            if (['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'].includes(cmd)) {
-                if (cmd === 'justifyLeft') target.style.textAlign = 'left';
-                if (cmd === 'justifyCenter') target.style.textAlign = 'center';
-                if (cmd === 'justifyRight') target.style.textAlign = 'right';
-                if (cmd === 'justifyFull') target.style.textAlign = 'justify';
-            } else {
-                document.execCommand(cmd, false, null);
+        // 1. ?????????? ??????? ??? ????????? ???????? ?? ??? ??????? ???
+        document.addEventListener('selectionchange', () => {
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0);
+                const canvas = document.getElementById('main-canvas');
+                if (canvas && canvas.contains(range.commonAncestorContainer)) {
+                    savedRange = range.cloneRange();
+                    
+                    let node = range.commonAncestorContainer;
+                    if (node.nodeType === 3) node = node.parentNode;
+                    activeEl = node.closest('.edit-text') || node.closest('.canvas-block');
+                }
             }
-            if (typeof syncTextStyles === 'function') syncTextStyles(activeBlock);
         });
-    });
 
-    // B. SLIDERS, COLORS, AND DROPDOWNS
-    // Apply styles directly to the active block's CSS. No focus stealing, no execCommand.
-    function updateBlockStyle(prop, val) {
-        const target = getActiveTextTarget();
-        if (target) target.style[prop] = val;
-    }
+        const mainCanvas = document.getElementById('main-canvas');
+        if (mainCanvas) {
+            mainCanvas.addEventListener('click', (e) => {
+                activeEl = e.target.closest('.edit-text') || e.target.closest('.canvas-block');
+            });
+        }
 
-    const sizeSlider = document.getElementById('fmt-size-slider');
-    const sizeInput = document.getElementById('fmt-size-input');
-    if (sizeSlider && sizeInput) {
-        sizeSlider.addEventListener('input', e => { 
-            sizeInput.value = e.target.value; 
-            updateBlockStyle('fontSize', e.target.value + 'px'); 
-        });
-        sizeInput.addEventListener('input', e => { 
-            sizeSlider.value = e.target.value; 
-            updateBlockStyle('fontSize', e.target.value + 'px'); 
-        });
-    }
+        // 2. ?????? ????????? ???? ??? ???? (execCommand ????)
+        function applyStyle(cssProperty, value, isBlockLevel = false) {
+            if (!activeEl) return;
 
-    const colorPicker = document.getElementById('fmt-color');
-    if (colorPicker) {
-        colorPicker.addEventListener('input', e => updateBlockStyle('color', e.target.value));
-    }
+            if (isBlockLevel) {
+                activeEl.style[cssProperty] = value;
+                return;
+            }
 
-    const trackSlider = document.getElementById('fmt-tracking');
-    if (trackSlider) trackSlider.addEventListener('input', e => updateBlockStyle('letterSpacing', e.target.value + 'px'));
+            // ???? ??????? ??? ????? ??????? (span) ???? ????? ???
+            if (savedRange && !savedRange.collapsed) {
+                const span = document.createElement('span');
+                span.style[cssProperty] = value;
+                
+                try {
+                    span.appendChild(savedRange.extractContents());
+                    savedRange.insertNode(span);
+                    
+                    // ??????? ????? ???
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    const newRange = document.createRange();
+                    newRange.selectNodeContents(span);
+                    sel.addRange(newRange);
+                    savedRange = newRange.cloneRange();
+                } catch(e) {
+                    activeEl.style[cssProperty] = value;
+                }
+            } else {
+                // ???? ??????? ?? ????? ???? ????? ?????? ?????
+                activeEl.style[cssProperty] = value;
+            }
+        }
 
-    const leadSlider = document.getElementById('fmt-leading');
-    if (leadSlider) leadSlider.addEventListener('input', e => updateBlockStyle('lineHeight', e.target.value));
+        // 3. ????????? ????????????? ???? ?????? ???????
+        
+        // ????? ?????
+        const colorPicker = document.getElementById('fmt-color');
+        if (colorPicker) {
+            colorPicker.addEventListener('input', e => applyStyle('color', e.target.value));
+        }
 
-    const fontDrop = document.getElementById('fmt-font');
-    if (fontDrop) fontDrop.addEventListener('change', e => updateBlockStyle('fontFamily', e.target.value));
+        // ???? ???? (???????? ??? ????? ????)
+        const sizeSlider = document.getElementById('fmt-size-slider');
+        const sizeInput = document.getElementById('fmt-size-input');
+        if (sizeSlider && sizeInput) {
+            sizeSlider.addEventListener('input', e => {
+                sizeInput.value = e.target.value;
+                applyStyle('fontSize', e.target.value + 'px');
+            });
+            sizeInput.addEventListener('input', e => {
+                sizeSlider.value = e.target.value;
+                applyStyle('fontSize', e.target.value + 'px');
+            });
+        }
 
-    const widthInput = document.getElementById('fmt-width');
-    if (widthInput) widthInput.addEventListener('input', e => {
-        const wWrap = activeBlock ? (activeBlock.closest('.canvas-block') || activeBlock) : null;
-        if (wWrap) wWrap.style.width = e.target.value + '%';
-    });
-
-    const heightInput = document.getElementById('fmt-height');
-    if (heightInput) heightInput.addEventListener('input', e => {
-        const hWrap = activeBlock ? (activeBlock.closest('.canvas-block') || activeBlock) : null;
-        if (hWrap) hWrap.style.minHeight = e.target.value ? (e.target.value + 'px') : 'auto';
-    });
-
-    const blockSelect = document.getElementById('fmt-block');
-    if (blockSelect) {
-        blockSelect.addEventListener('change', e => {
-            const target = getActiveTextTarget();
-            if (!target || (target.id && target.id.startsWith('default-')) || target.closest('.meta-data')) return;
-            const newTag = e.target.value.toUpperCase();
-            if (target.tagName === newTag) return;
+        // ?????, ??????, ?????????? ??? ?????????? ????
+        document.querySelectorAll('.fmt-btn').forEach(btn => {
+            btn.addEventListener('mousedown', e => e.preventDefault()); // ????? ?????? ???? ????
             
-            const newEl = document.createElement(newTag);
-            Array.from(target.attributes).forEach(attr => newEl.setAttribute(attr.name, attr.value));
-            newEl.innerHTML = target.innerHTML;
-            target.parentNode.replaceChild(newEl, target);
-            if (activeBlock === target) activeBlock = newEl;
-            newEl.focus();
+            btn.addEventListener('click', e => {
+                const cmd = btn.dataset.cmd;
+                if (!activeEl) return;
+                
+                if (cmd === 'bold') {
+                    const currentWeight = window.getComputedStyle(activeEl).fontWeight;
+                    applyStyle('fontWeight', (parseInt(currentWeight) >= 700 || currentWeight === 'bold') ? 'normal' : 'bold');
+                }
+                if (cmd === 'italic') {
+                    const currentStyle = window.getComputedStyle(activeEl).fontStyle;
+                    applyStyle('fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
+                }
+                if (cmd === 'underline') {
+                    const currentDeco = window.getComputedStyle(activeEl).textDecorationLine;
+                    applyStyle('textDecoration', currentDeco.includes('underline') ? 'none' : 'underline');
+                }
+                
+                if (['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'].includes(cmd)) {
+                    if (cmd === 'justifyLeft') applyStyle('textAlign', 'left', true);
+                    if (cmd === 'justifyCenter') applyStyle('textAlign', 'center', true);
+                    if (cmd === 'justifyRight') applyStyle('textAlign', 'right', true);
+                    if (cmd === 'justifyFull') applyStyle('textAlign', 'justify', true);
+                }
+            });
         });
-    }
+
+        // ???? ????????
+        const fontDrop = document.getElementById('fmt-font');
+        if (fontDrop) fontDrop.addEventListener('change', e => applyStyle('fontFamily', e.target.value));
+
+        // ????????? ??? ?????
+        const trackSlider = document.getElementById('fmt-tracking');
+        if (trackSlider) trackSlider.addEventListener('input', e => applyStyle('letterSpacing', e.target.value + 'px'));
+
+        const leadSlider = document.getElementById('fmt-leading');
+        if (leadSlider) leadSlider.addEventListener('input', e => applyStyle('lineHeight', e.target.value, true));
+        
+        // ????? ???????? (H1, H2, P)
+        const blockSelect = document.getElementById('fmt-block');
+        if (blockSelect) {
+            blockSelect.addEventListener('change', e => {
+                if (!activeEl || activeEl.id.startsWith('default-') || activeEl.closest('.meta-data')) return;
+                const newTag = e.target.value.toUpperCase();
+                if (activeEl.tagName === newTag) return;
+                
+                const newEl = document.createElement(newTag);
+                Array.from(activeEl.attributes).forEach(attr => newEl.setAttribute(attr.name, attr.value));
+                newEl.innerHTML = activeEl.innerHTML;
+                activeEl.parentNode.replaceChild(newEl, activeEl);
+                activeEl = newEl;
+            });
+        }
+    })();
 
         // --- 5. VIDEO SETTINGS ---
     const vidUrl = document.getElementById('vid-url');
@@ -1551,6 +1599,7 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
 
 
 
