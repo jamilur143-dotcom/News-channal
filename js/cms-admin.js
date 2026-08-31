@@ -895,7 +895,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (!activeRange) {
-            debugToast(pplyFormat(\): aborted. No activeRange.);
+            debugToast('applyFormat: aborted. No activeRange. cmd=' + cmd);
             return;
         }
 
@@ -911,10 +911,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 target = activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text') || activeBlock;
             }
             if (!target) {
-                debugToast(pplyFormat(\): aborted. Target is null.);
+                debugToast('applyFormat: aborted block cmd. Target null. cmd=' + cmd);
                 return;
             }
-            debugToast(pplyFormat(\): Block command executing on \);
+            debugToast('applyFormat: Executing block command: ' + cmd + ' on ' + target.tagName);
+
             switch (cmd) {
                 case 'justifyLeft':   target.style.textAlign = 'left';    break;
                 case 'justifyCenter': target.style.textAlign = 'center';  break;
@@ -951,11 +952,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // --- 2. INLINE / SELECTION COMMANDS ---
         if (isCollapsed) {
-            debugToast(pplyFormat(\): aborted. Selection is collapsed. (source=\));
+            debugToast('applyFormat: aborted. Selection is collapsed. cmd=' + cmd + ', source=' + source);
             return;
         }
 
-        debugToast(pplyFormat(\): Inline command executing (source=\));
+        debugToast('applyFormat: Executing inline cmd=' + cmd + ', val=' + val + ', source=' + source);
 
         // Restore selection globally so execCommand targets it!
         sel.removeAllRanges();
@@ -1732,6 +1733,7 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
 
 
 

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<body>
+<div id="main-canvas" contenteditable="true" style="border: 1px solid black; padding: 20px;">
+    fdgfdgbfsdg
+</div>
+<button id="btn">Make 30px</button>
+<script>
+    function debugToast(msg) {
+        let toast = document.getElementById('debug-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'debug-toast';
+            toast.style = 'position:fixed; bottom:20px; left:20px; background:rgba(0,0,0,0.8); color:white; padding:10px; border-radius:4px; z-index:99999; font-size:12px; max-width: 400px; word-wrap: break-word;';
+            document.body.appendChild(toast);
+        }
+        toast.innerText = msg;
+    }
+    
+    document.getElementById('btn').addEventListener('click', (e) => {
+        debugToast('Hello world');
+    });
+</script>
+</body>
+</html>
