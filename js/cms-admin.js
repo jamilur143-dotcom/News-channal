@@ -739,48 +739,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (cmd === 'justifyFull' && computed.textAlign === 'justify') btn.classList.add('active');
         });
     }
-
-    // --- PLAIN TEXT PASTE ---
-    document.addEventListener('paste', (e) => {
-        if (e.target.closest('.visual-canvas') && e.target.isContentEditable) {
-            e.preventDefault();
-            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-            document.execCommand('insertText', false, text);
-        }
-    });
-
-    
-
-    const splitRatioSelect = document.getElementById('split-layout-ratio');
-    if (splitRatioSelect) {
-        splitRatioSelect.addEventListener('change', e => {
-            if (activeBlock && activeBlock.dataset.type === 'split') {
-                const ratio = e.target.value;
-                activeBlock.dataset.ratio = ratio;
-                const container = activeBlock.querySelector('.split-container');
-                
-                let currentCols = container.querySelectorAll('.inner-dropzone').length;
-                let targetCols = ratio === '1:1:1' ? 3 : 2;
-                
-                while(currentCols < targetCols) {
-                    const newCol = document.createElement('div');
-                    newCol.className = 'inner-dropzone';
-                    newCol.style = 'border:1px dashed #ccc; padding:16px; min-height:100px;';
-                    container.appendChild(newCol);
-                    currentCols++;
-                }
-                while(currentCols > targetCols) {
-                    if (container.lastElementChild.classList.contains('inner-dropzone')) {
-                        container.lastElementChild.remove();
-                        currentCols--;
-                    } else { break; }
-                }
-                
-                if (ratio === '1:1') container.style.gridTemplateColumns = '1fr 1fr';
-                else if (ratio === '1:2') container.style.gridTemplateColumns = '1fr 2fr';
-                else if (ratio === '2:1') container.style.gridTemplateColumns = '2fr 1fr';
-    }
-
     // --- PLAIN TEXT PASTE ---
     document.addEventListener('paste', (e) => {
         if (e.target.closest('.visual-canvas') && e.target.isContentEditable) {
@@ -1748,20 +1706,6 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
-
-
-
-
-
-
-
-
-
-
-
-    }
-}); // close main DOMContentLoaded extra braces
-
 
 
 
