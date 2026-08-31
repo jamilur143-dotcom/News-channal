@@ -113,7 +113,13 @@
           <option value="template8">Template 8: Split Cover (Side-by-Side)</option>
           <option value="template9">Template 9: Editor's Note (Magazine)</option>
         </select>
-        <a href="../index.html" class="btn btn-outline btn-sm">&larr; Back to Site</a>
+        <button type="button" class="btn btn-outline btn-sm" id="btn-open-ad-settings" style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:1.1rem;">&#128176;</span> Ad Settings
+        </button>
+        <button type="button" class="btn btn-publish btn-sm" id="top-publish-btn" style="padding:6px 16px;">
+            &#10003; Publish Live
+        </button>
+        <a href="../index.html" class="btn btn-outline btn-sm" style="margin-left: 4px;">&larr; Back to Site</a>
       </div>
       <div class="topbar-user"><div class="topbar-avatar">AD</div></div>
     </div>
@@ -258,39 +264,7 @@
       <!-- COLUMN 3: SETTINGS -->
         <div style="width: 300px; flex-shrink: 0; position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column;" class="custom-scrollbar">
         
-        <div class="publish-card" style="order: 2;">
-          <div class="publish-card-header">
-            <!-- Global Ad Settings -->
-          <div class="form-panel" style="margin-bottom: 24px;">
-            <div class="form-panel-header" style="border-bottom:1px solid #e2e8f0; background:#f8fafc; padding:12px 16px;">
-              <h3 style="font-size: 0.95rem; color: #1A237E; letter-spacing: 0.05em; margin:0;">&#128176; AD SETTINGS</h3>
-            </div>
-            <div class="form-panel-body" style="display: flex; flex-direction: column; gap: 12px; padding: 12px 16px;">
-                <div class="field-group">
-                    <label class="field-label" style="font-size:0.75rem;">Article Banner Ad Code (300x250)</label>
-                    <textarea id="global-ad-banner" class="field-input" rows="4" placeholder="<script>...</script>"></textarea>
-                </div>
-                <div class="field-group">
-                    <label class="field-label" style="font-size:0.75rem;">Social Bar/Popunder Script</label>
-                    <textarea id="global-ad-script" class="field-input" rows="4" placeholder="<script>...</script>"></textarea>
-                </div>
-                <button class="btn btn-outline" id="btn-save-ads" style="width:100%; margin-top:4px;">Save Changes</button>
-            </div>
-          </div>
-          <h3>&#9654; Publish Actions</h3>
-          </div>
-          <div class="publish-card-body">
-            <div class="publish-meta">
-              <div class="publish-row">
-                <label>Status</label>
-                <select id="article-status" class="field-input field-select" style="width:auto;padding:5px 28px 5px 10px;font-size:.85rem"><option value="Published" selected>Published</option><option value="Draft">Draft</option></select>
-              </div>
-            </div>
-            <div class="publish-actions">
-              <button class="btn btn-publish" id="publish-btn">&#10003; Publish Live</button>
-            </div>
-          </div>
-        </div>
+        
 
         <div id="dynamic-panels" class="mt-16" style="order: 1; margin-bottom: 20px;">
           
@@ -305,6 +279,13 @@
                     <option value="politics">Politics</option>
                     <option value="technology">Technology</option>
                     <option value="sports">Sports</option>
+                  </select>
+               </div>
+               <div class="field-group">
+                  <label class="field-label">Status</label>
+                  <select id="article-status" class="field-input field-select">
+                    <option value="Published" selected>Published</option>
+                    <option value="Draft">Draft</option>
                   </select>
                </div>
                <div class="field-group">
@@ -555,12 +536,32 @@
   </div>
 </div>
 
+<div id="ad-settings-modal" class="manage-modal-overlay">
+  <div class="manage-modal-content" style="max-width: 500px; height: auto; border-radius: 12px; margin-top: 10vh; margin-bottom: auto; background: #f8fafc;">
+    <div class="manage-modal-header" style="padding: 20px; border-bottom: 1px solid #e2e8f0; border-radius: 12px 12px 0 0;">
+      <h2 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0; display:flex; align-items:center; gap:8px;"><span>&#128176;</span> Ad Settings</h2>
+      <button class="manage-modal-close" id="ad-settings-modal-close" title="Close" style="font-size: 2rem;">&times;</button>
+    </div>
+    <div style="padding: 24px; background: #fff; border-radius: 0 0 12px 12px;">
+      <div class="field-group" style="margin-bottom: 20px;">
+          <label class="field-label" style="font-size: 0.9rem; margin-bottom: 8px;">Article Banner Ad Code (300x250)</label>
+          <textarea id="global-ad-banner" class="field-input" rows="5" placeholder="<script>...</script>" style="font-family: monospace; font-size: 0.85rem; line-height: 1.4;"></textarea>
+      </div>
+      <div class="field-group" style="margin-bottom: 24px;">
+          <label class="field-label" style="font-size: 0.9rem; margin-bottom: 8px;">Social Bar / Popunder Script</label>
+          <textarea id="global-ad-script" class="field-input" rows="5" placeholder="<script>...</script>" style="font-family: monospace; font-size: 0.85rem; line-height: 1.4;"></textarea>
+      </div>
+      <button class="btn btn-publish" id="btn-save-ads" style="width:100%; padding: 12px; font-size: 1rem;">&#128190; Save Settings</button>
+    </div>
+  </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="../js/admin.js"></script>
 <script src="../js/cms-db.js"></script>
-<script src="../js/cms-admin.js?v=13"></script>
+<script src="../js/cms-admin.js?v=14"></script>
 </body>
 </html>
+

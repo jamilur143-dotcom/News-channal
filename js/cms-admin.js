@@ -840,7 +840,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- 6. PUBLISH LOGIC ---
-    const publishBtn = document.getElementById('publish-btn');
+    const publishBtn = document.getElementById('top-publish-btn');
     if(publishBtn) {
         publishBtn.addEventListener('click', async () => {
             const title = defaultTitle ? defaultTitle.textContent.trim() : '';
@@ -1086,6 +1086,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const manageBody = document.getElementById('manage-modal-body');
 
     if(btnManage && modalManage) {
+        // --- Ad Settings Modal Logic ---
+        const btnAdSettings = document.getElementById('btn-open-ad-settings');
+        const modalAdSettings = document.getElementById('ad-settings-modal');
+        const btnCloseAdSettings = document.getElementById('ad-settings-modal-close');
+        
+        if (btnAdSettings && modalAdSettings) {
+            btnAdSettings.addEventListener('click', () => {
+                modalAdSettings.style.display = 'flex';
+            });
+            btnCloseAdSettings.addEventListener('click', () => {
+                modalAdSettings.style.display = 'none';
+            });
+            // Close when clicking outside the modal content
+            modalAdSettings.addEventListener('click', (e) => {
+                if (e.target === modalAdSettings) {
+                    modalAdSettings.style.display = 'none';
+                }
+            });
+            // Close when saving ads
+            const saveAdsBtnGlobal = document.getElementById('btn-save-ads');
+            if (saveAdsBtnGlobal) {
+                saveAdsBtnGlobal.addEventListener('click', () => {
+                    modalAdSettings.style.display = 'none';
+                });
+            }
+        }
+
         btnManage.addEventListener('click', async () => {
             modalManage.style.display = 'flex';
             if (manageBody) manageBody.innerHTML = '<div style="text-align:center; padding: 40px; color: #64748b;"><h3>Loading articles from Cloud...</h3></div>';
