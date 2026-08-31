@@ -794,144 +794,106 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // --- 4. FORMATTING CONTROLS (BULLETPROOF FIX) ---
-    (function initFormatting() {
-        let savedRange = null;
-        let activeEl = null;
+    // --- 4. FORMATTING CONTROLS (BLOCK-LEVEL APPROACH) ---
+    (function initBlockFormatting() {
+        // Helper: Find the active editable text block
+        function getActiveTextNode() {
+            if (!activeBlock) return null;
+            return activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text') || activeBlock;
+        }
 
-        // 1. ?????????? ??????? ??? ????????? ???????? ?? ??? ??????? ???
-        document.addEventListener('selectionchange', () => {
-            const sel = window.getSelection();
-            if (sel.rangeCount > 0) {
-                const range = sel.getRangeAt(0);
-                const canvas = document.getElementById('main-canvas');
-                if (canvas && canvas.contains(range.commonAncestorContainer)) {
-                    savedRange = range.cloneRange();
-                    
-                    let node = range.commonAncestorContainer;
-                    if (node.nodeType === 3) node = node.parentNode;
-                    activeEl = node.closest('.edit-text') || node.closest('.canvas-block');
+        // 1. INLINE STYLES (Bold, Italic, Underline) - Uses standard execCommand on mousedown
+        document.querySelectorAll('.fmt-btn').forEach(btn => {
+            btn.addEventListener('mousedown', e => {
+                e.preventDefault(); // Prevent focus loss for these specific buttons
+                const cmd = btn.dataset.cmd;
+                
+                if (['bold', 'italic', 'underline'].includes(cmd)) {
+                    document.execCommand(cmd, false, null);
+                } else if (['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'].includes(cmd)) {
+                    const target = getActiveTextNode();
+                    if (target) {
+                        if (cmd === 'justifyLeft') target.style.textAlign = 'left';
+                        if (cmd === 'justifyCenter') target.style.textAlign = 'center';
+                        if (cmd === 'justifyRight') target.style.textAlign = 'right';
+                        if (cmd === 'justifyFull') target.style.textAlign = 'justify';
+                    }
                 }
-            }
+            });
         });
 
-        const mainCanvas = document.getElementById('main-canvas');
-        if (mainCanvas) {
-            mainCanvas.addEventListener('click', (e) => {
-                activeEl = e.target.closest('.edit-text') || e.target.closest('.canvas-block');
-            });
-        }
-
-        // 2. ?????? ????????? ???? ??? ???? (execCommand ????)
-        function applyStyle(cssProperty, value, isBlockLevel = false) {
-            if (!activeEl) return;
-
-            if (isBlockLevel) {
-                activeEl.style[cssProperty] = value;
-                return;
-            }
-
-            // ???? ??????? ??? ????? ??????? (span) ???? ????? ???
-            if (savedRange && !savedRange.collapsed) {
-                const span = document.createElement('span');
-                span.style[cssProperty] = value;
-                
-                try {
-                    span.appendChild(savedRange.extractContents());
-                    savedRange.insertNode(span);
-                    
-                    // ??????? ????? ???
-                    const sel = window.getSelection();
-                    sel.removeAllRanges();
-                    const newRange = document.createRange();
-                    newRange.selectNodeContents(span);
-                    sel.addRange(newRange);
-                    savedRange = newRange.cloneRange();
-                } catch(e) {
-                    activeEl.style[cssProperty] = value;
-                }
-            } else {
-                // ???? ??????? ?? ????? ???? ????? ?????? ?????
-                activeEl.style[cssProperty] = value;
+        // 2. BLOCK STYLES (Color, Size, Sliders, Dropdowns) - Applies directly to the element's CSS
+        function applyBlockStyle(cssProperty, value) {
+            const target = getActiveTextNode();
+            if (target) {
+                target.style[cssProperty] = value;
             }
         }
 
-        // 3. ????????? ????????????? ???? ?????? ???????
-        
-        // ????? ?????
+        // Color Picker (Triggers on both input and change for OS-level dialogs)
         const colorPicker = document.getElementById('fmt-color');
         if (colorPicker) {
-            colorPicker.addEventListener('input', e => applyStyle('color', e.target.value));
+            colorPicker.addEventListener('input', e => applyBlockStyle('color', e.target.value));
+            colorPicker.addEventListener('change', e => applyBlockStyle('color', e.target.value));
         }
 
-        // ???? ???? (???????? ??? ????? ????)
+        // Font Size (Slider + Input Sync)
         const sizeSlider = document.getElementById('fmt-size-slider');
         const sizeInput = document.getElementById('fmt-size-input');
         if (sizeSlider && sizeInput) {
             sizeSlider.addEventListener('input', e => {
                 sizeInput.value = e.target.value;
-                applyStyle('fontSize', e.target.value + 'px');
+                applyBlockStyle('fontSize', e.target.value + 'px');
             });
             sizeInput.addEventListener('input', e => {
                 sizeSlider.value = e.target.value;
-                applyStyle('fontSize', e.target.value + 'px');
+                applyBlockStyle('fontSize', e.target.value + 'px');
             });
         }
 
-        // ?????, ??????, ?????????? ??? ?????????? ????
-        document.querySelectorAll('.fmt-btn').forEach(btn => {
-            btn.addEventListener('mousedown', e => e.preventDefault()); // ????? ?????? ???? ????
-            
-            btn.addEventListener('click', e => {
-                const cmd = btn.dataset.cmd;
-                if (!activeEl) return;
-                
-                if (cmd === 'bold') {
-                    const currentWeight = window.getComputedStyle(activeEl).fontWeight;
-                    applyStyle('fontWeight', (parseInt(currentWeight) >= 700 || currentWeight === 'bold') ? 'normal' : 'bold');
-                }
-                if (cmd === 'italic') {
-                    const currentStyle = window.getComputedStyle(activeEl).fontStyle;
-                    applyStyle('fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
-                }
-                if (cmd === 'underline') {
-                    const currentDeco = window.getComputedStyle(activeEl).textDecorationLine;
-                    applyStyle('textDecoration', currentDeco.includes('underline') ? 'none' : 'underline');
-                }
-                
-                if (['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'].includes(cmd)) {
-                    if (cmd === 'justifyLeft') applyStyle('textAlign', 'left', true);
-                    if (cmd === 'justifyCenter') applyStyle('textAlign', 'center', true);
-                    if (cmd === 'justifyRight') applyStyle('textAlign', 'right', true);
-                    if (cmd === 'justifyFull') applyStyle('textAlign', 'justify', true);
-                }
-            });
+        // Font Family
+        const fontDrop = document.getElementById('fmt-font');
+        if (fontDrop) fontDrop.addEventListener('change', e => applyBlockStyle('fontFamily', e.target.value));
+
+        // Tracking (Letter Spacing)
+        const trackSlider = document.getElementById('fmt-tracking');
+        if (trackSlider) trackSlider.addEventListener('input', e => applyBlockStyle('letterSpacing', e.target.value + 'px'));
+
+        // Leading (Line Height)
+        const leadSlider = document.getElementById('fmt-leading');
+        if (leadSlider) leadSlider.addEventListener('input', e => applyBlockStyle('lineHeight', e.target.value));
+
+        // Dimensions (Width & Height)
+        const widthInput = document.getElementById('fmt-width');
+        if (widthInput) widthInput.addEventListener('input', e => {
+            const wWrap = activeBlock ? (activeBlock.closest('.canvas-block') || activeBlock) : null;
+            if (wWrap) wWrap.style.width = e.target.value + '%';
         });
 
-        // ???? ????????
-        const fontDrop = document.getElementById('fmt-font');
-        if (fontDrop) fontDrop.addEventListener('change', e => applyStyle('fontFamily', e.target.value));
+        const heightInput = document.getElementById('fmt-height');
+        if (heightInput) heightInput.addEventListener('input', e => {
+            const hWrap = activeBlock ? (activeBlock.closest('.canvas-block') || activeBlock) : null;
+            if (hWrap) hWrap.style.minHeight = e.target.value ? (e.target.value + 'px') : 'auto';
+        });
 
-        // ????????? ??? ?????
-        const trackSlider = document.getElementById('fmt-tracking');
-        if (trackSlider) trackSlider.addEventListener('input', e => applyStyle('letterSpacing', e.target.value + 'px'));
-
-        const leadSlider = document.getElementById('fmt-leading');
-        if (leadSlider) leadSlider.addEventListener('input', e => applyStyle('lineHeight', e.target.value, true));
-        
-        // ????? ???????? (H1, H2, P)
+        // Block Type (HTML Tag Conversion)
         const blockSelect = document.getElementById('fmt-block');
         if (blockSelect) {
             blockSelect.addEventListener('change', e => {
-                if (!activeEl || activeEl.id.startsWith('default-') || activeEl.closest('.meta-data')) return;
+                const target = getActiveTextNode();
+                if (!target || (target.id && target.id.startsWith('default-')) || target.closest('.meta-data')) return;
+                
                 const newTag = e.target.value.toUpperCase();
-                if (activeEl.tagName === newTag) return;
+                if (target.tagName === newTag) return;
                 
                 const newEl = document.createElement(newTag);
-                Array.from(activeEl.attributes).forEach(attr => newEl.setAttribute(attr.name, attr.value));
-                newEl.innerHTML = activeEl.innerHTML;
-                activeEl.parentNode.replaceChild(newEl, activeEl);
-                activeEl = newEl;
+                Array.from(target.attributes).forEach(attr => newEl.setAttribute(attr.name, attr.value));
+                newEl.innerHTML = target.innerHTML;
+                target.parentNode.replaceChild(newEl, target);
+                
+                if (activeBlock === target || activeBlock.contains(target)) {
+                    activeBlock = newEl;
+                }
             });
         }
     })();
@@ -1599,6 +1561,7 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
 
 
 
