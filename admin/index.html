@@ -582,6 +582,78 @@
 <script src="../js/admin.js"></script>
 <script src="../js/cms-db.js"></script>
 <script src="../js/cms-admin.js?v=33"></script>
+<!-- FINAL EDITING PANEL FIX -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // ১. ক্যানভাসের অ্যাক্টিভ (নীল বর্ডার যুক্ত) টেক্সট খুঁজে বের করার ফাংশন
+    function getActiveTarget() {
+        const activeEl = document.querySelector('.visual-canvas .active');
+        if (!activeEl) return null;
+        return activeEl.classList.contains('edit-text') ? activeEl : (activeEl.querySelector('.edit-text') || activeEl);
+    }
+
+    // ২. কালার পিকার
+    const colorPicker = document.getElementById('fmt-color');
+    if (colorPicker) {
+        colorPicker.addEventListener('input', (e) => {
+            const target = getActiveTarget();
+            if (target) target.style.color = e.target.value;
+        });
+    }
+
+    // ৩. ফন্ট সাইজ (স্লাইডার এবং বক্স)
+    const sizeSlider = document.getElementById('fmt-size-slider');
+    const sizeInput = document.getElementById('fmt-size-input');
+    if (sizeSlider && sizeInput) {
+        const updateSize = (val) => {
+            const target = getActiveTarget();
+            if (target) target.style.fontSize = val + 'px';
+        };
+        sizeSlider.addEventListener('input', (e) => { sizeInput.value = e.target.value; updateSize(e.target.value); });
+        sizeInput.addEventListener('input', (e) => { sizeSlider.value = e.target.value; updateSize(e.target.value); });
+    }
+
+    // ৪. বোল্ড, ইটালিক, অ্যালাইনমেন্ট বাটন (পুরনো ইভেন্ট মুছে নতুন করে অ্যাড করা)
+    document.querySelectorAll('.fmt-btn').forEach(btn => {
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        newBtn.addEventListener('mousedown', e => e.preventDefault()); // ফোকাস লস বন্ধ করে
+        newBtn.addEventListener('click', e => {
+            e.preventDefault();
+            const target = getActiveTarget();
+            if (!target) return;
+            
+            const cmd = newBtn.dataset.cmd;
+            if (cmd === 'bold') {
+                const isBold = window.getComputedStyle(target).fontWeight;
+                target.style.fontWeight = (parseInt(isBold) >= 700 || isBold === 'bold') ? 'normal' : 'bold';
+            } else if (cmd === 'italic') {
+                target.style.fontStyle = (window.getComputedStyle(target).fontStyle === 'italic') ? 'normal' : 'italic';
+            } else if (cmd === 'underline') {
+                target.style.textDecoration = target.style.textDecoration.includes('underline') ? 'none' : 'underline';
+            } else if (['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'].includes(cmd)) {
+                target.style.textAlign = cmd.replace('justify', '').toLowerCase();
+                if(cmd === 'justifyFull') target.style.textAlign = 'justify';
+            }
+        });
+    });
+
+    // ৫. ফন্ট ফ্যামিলি, লিডিং, ট্র্যাকিং
+    document.getElementById('fmt-font')?.addEventListener('change', e => {
+        const target = getActiveTarget();
+        if (target) target.style.fontFamily = e.target.value;
+    });
+    document.getElementById('fmt-tracking')?.addEventListener('input', e => {
+        const target = getActiveTarget();
+        if (target) target.style.letterSpacing = e.target.value + 'px';
+    });
+    document.getElementById('fmt-leading')?.addEventListener('input', e => {
+        const target = getActiveTarget();
+        if (target) target.style.lineHeight = e.target.value;
+    });
+});
+</script>
 </body>
 </html>
 
