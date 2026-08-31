@@ -1,3 +1,14 @@
+    function debugToast(msg) {
+        let toast = document.getElementById('debug-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'debug-toast';
+            toast.style = 'position:fixed; bottom:20px; left:20px; background:rgba(0,0,0,0.8); color:white; padding:10px; border-radius:4px; z-index:99999; font-size:12px; max-width: 400px; word-wrap: break-word;';
+            document.body.appendChild(toast);
+        }
+        toast.innerText = msg;
+        console.log("DEBUG:", msg);
+    }
 // --- GLOBAL HELPERS: URL RESOLUTION & SHORTENER ---
 function getArticleLandingUrl(articleId) {
     const origin = window.location.origin;
@@ -870,21 +881,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sel = window.getSelection();
         let activeRange = null;
         let isCollapsed = true;
+        let source = '';
 
         const canvas = document.getElementById('main-canvas');
-        
-        // Use native selection if it's not collapsed and inside canvas
         if (sel.rangeCount > 0 && canvas && canvas.contains(sel.anchorNode) && !sel.isCollapsed) {
             activeRange = sel.getRangeAt(0);
             isCollapsed = false;
-        } 
-        // Fallback to saved selection (crucial because clicking panel controls often collapses native selection)
-        else if (savedCanvasRange) {
+            source = 'native';
+        } else if (savedCanvasRange) {
             activeRange = savedCanvasRange;
             isCollapsed = savedCanvasRange.collapsed;
+            source = 'saved';
         }
 
-        if (!activeRange) return;
+        if (!activeRange) {
+            debugToast(pplyFormat(\): aborted. No activeRange.);
+            return;
+        }
 
         const blockCommands = ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'letterSpacing', 'lineHeight', 'width', 'minHeight', 'formatBlock'];
         
@@ -897,8 +910,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!target && activeBlock) {
                 target = activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text') || activeBlock;
             }
-            if (!target) return;
-
+            if (!target) {
+                debugToast(pplyFormat(\): aborted. Target is null.);
+                return;
+            }
+            debugToast(pplyFormat(\): Block command executing on \);
             switch (cmd) {
                 case 'justifyLeft':   target.style.textAlign = 'left';    break;
                 case 'justifyCenter': target.style.textAlign = 'center';  break;
@@ -934,7 +950,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // --- 2. INLINE / SELECTION COMMANDS ---
-        if (isCollapsed) return;
+        if (isCollapsed) {
+            debugToast(pplyFormat(\): aborted. Selection is collapsed. (source=\));
+            return;
+        }
+
+        debugToast(pplyFormat(\): Inline command executing (source=\));
 
         // Restore selection globally so execCommand targets it!
         sel.removeAllRanges();
@@ -979,7 +1000,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         setTimeout(() => syncTextStyles(activeBlock), 10);
     }
-
 
     // ─── Style buttons (Bold, Italic, Underline, Alignment) ─────────────────
     document.querySelectorAll('.fmt-btn').forEach(btn => {
@@ -1712,6 +1732,8 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
+
 
 
 
