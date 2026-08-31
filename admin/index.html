@@ -224,6 +224,20 @@
 
           <!-- 2-COLUMN ARTICLE LAYOUT -->
           <div class="article-layout-wrapper">
+            
+            <main class="article-container">
+              
+              <h1 contenteditable="true" id="default-title" class="edit-text" placeholder="Type your main headline here..."></h1>
+              
+              <div class="meta-data">
+                <span><small>Date</small><strong contenteditable="true" class="edit-text">Oct 14, 2026</strong></span>
+                <span><small>Category</small><strong contenteditable="true" class="edit-text">Technology</strong></span>
+                <span><small>Author</small><strong contenteditable="true" class="edit-text">Nexus Editorial</strong></span>
+              </div>
+  
+              <div contenteditable="true" id="default-content" class="edit-text edit-p" placeholder="Start writing your intro paragraph here..."></div>
+              
+              <div id="dropzone">
                  <div class="drop-hint">Drop extra paragraphs, images, videos, and square ads here...</div>
               </div>
             </main>
@@ -257,9 +271,6 @@
         
 
         <div id="dynamic-panels" class="mt-16" style="order: 1; margin-bottom: 20px;">
-          
-          
-          </div>
 
           <!-- Text Formatting -->
           <div id="panel-text" class="form-panel" style="display:block;">
@@ -570,7 +581,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="../js/admin.js"></script>
 <script src="../js/cms-db.js"></script>
-<script src="../js/cms-admin.js?v=16"></script>
+<script src="../js/cms-admin.js?v=17"></script>
 </body>
 </html>
+
+
 
