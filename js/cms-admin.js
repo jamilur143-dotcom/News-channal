@@ -794,205 +794,99 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-        // --- 4. FORMATTING CONTROLS ---
+    // --- 4. FORMATTING CONTROLS (DIRECT STYLE INJECTION) ---
+    // Make sure NO panel-wide mousedown preventDefault exists!
 
-    // ── Global State ──────────────────────────────────────────────────────────
-    let savedRange = null;
-    let activeCanvasNode = null;
-
-    // ── Save Selection (on Canvas interaction) ────────────────────────────────
-    function saveSelection() {
-        const sel = window.getSelection();
-        if (sel.rangeCount > 0) {
-            const canvas = document.getElementById('main-canvas');
-            if (canvas && canvas.contains(sel.anchorNode)) {
-                savedRange = sel.getRangeAt(0);
-                activeCanvasNode = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode;
-            }
-        }
+    // Helper to get the actual text element
+    function getActiveTextTarget() {
+        if (!activeBlock) return null;
+        return activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text') || activeBlock;
     }
 
-    const mainCanvas = document.getElementById('main-canvas');
-    if (mainCanvas) {
-        mainCanvas.addEventListener('mouseup', saveSelection);
-        mainCanvas.addEventListener('keyup', saveSelection);
-    }
-
-    // ── Restore Selection (before applying any format) ────────────────────────
-    function restoreSelection() {
-        if (activeCanvasNode && typeof activeCanvasNode.focus === 'function') {
-            activeCanvasNode.focus();
-        }
-        if (savedRange) {
-            const sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(savedRange);
-        }
-    }
-
-    // ── Core Format Function ──────────────────────────────────────────────────
-        function applyFormat(cmd, val) {
-        const sel = window.getSelection();
-        const canvas = document.getElementById('main-canvas');
-        
-        // Find the active target block to force focus
-        let target = activeBlock ? (activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text') || activeBlock) : null;
-
-        // 1. FORCE FOCUS: execCommand will silently fail in modern browsers if the canvas isn't actively focused
-        if (target && typeof target.focus === 'function') {
-            target.focus();
-        }
-
-        let activeRange = null;
-        let isCollapsed = true;
-
-        // Prioritize native selection, fallback to saved tracking range
-        if (sel.rangeCount > 0 && canvas && canvas.contains(sel.anchorNode)) {
-            activeRange = sel.getRangeAt(0);
-            isCollapsed = sel.isCollapsed;
-        } else if (savedRange) {
-            activeRange = savedRange;
-            isCollapsed = savedRange.collapsed;
-            sel.removeAllRanges();
-            sel.addRange(activeRange);
-        }
-
-        if (!target) return;
-
-        // 2. BLOCK LEVEL COMMANDS (Alignment, Layout, Tags)
-        const blockCommands = ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'letterSpacing', 'lineHeight', 'width', 'minHeight', 'formatBlock'];
-        if (blockCommands.includes(cmd)) {
-            switch (cmd) {
-                case 'justifyLeft':   target.style.textAlign = 'left';    break;
-                case 'justifyCenter': target.style.textAlign = 'center';  break;
-                case 'justifyRight':  target.style.textAlign = 'right';   break;
-                case 'justifyFull':   target.style.textAlign = 'justify'; break;
-                case 'letterSpacing': target.style.letterSpacing = val + 'px'; break;
-                case 'lineHeight':    target.style.lineHeight = val; break;
-                case 'width':
-                    const wWrap = target.closest('.canvas-block') || target;
-                    wWrap.style.width = val + '%';
-                    break;
-                case 'minHeight':
-                    const hWrap = target.closest('.canvas-block') || target;
-                    hWrap.style.minHeight = val ? (val + 'px') : 'auto';
-                    break;
-                case 'formatBlock':
-                    if (target.id && target.id.startsWith('default-')) break;
-                    if (target.closest('.meta-data')) break;
-                    const newTag = val.toUpperCase();
-                    if (target.tagName === newTag) break;
-                    const newEl = document.createElement(newTag);
-                    Array.from(target.attributes).forEach(attr => newEl.setAttribute(attr.name, attr.value));
-                    newEl.innerHTML = target.innerHTML;
-                    target.parentNode.replaceChild(newEl, target);
-                    if (activeBlock === target) activeBlock = newEl;
-                    break;
-            }
-            setTimeout(() => { if (typeof syncTextStyles === 'function') syncTextStyles(activeBlock); }, 10);
-            return;
-        }
-
-        // 3. INLINE COMMANDS (Color, Font Size, Bold, Italic)
-        if (!isCollapsed && activeRange) {
-            // Apply exactly to the highlighted text
-            document.execCommand('styleWithCSS', false, true);
-            
-            if (cmd === 'fontSizePx') {
-                const span = document.createElement('span');
-                span.style.fontSize = val + 'px';
-                span.appendChild(activeRange.extractContents());
-                activeRange.insertNode(span);
-            } else if (cmd === 'fontName') {
-                const span = document.createElement('span');
-                span.style.fontFamily = val;
-                span.appendChild(activeRange.extractContents());
-                activeRange.insertNode(span);
-            } else {
-                document.execCommand(cmd, false, val);
-            }
-            
-            if (sel.rangeCount > 0) savedRange = sel.getRangeAt(0).cloneRange();
-            
-        } else {
-            // 4. FALLBACK: No text highlighted (cursor is just blinking). 
-            // Apply the style to the entire active block instead of doing nothing.
-            if (cmd === 'fontSizePx') target.style.fontSize = val + 'px';
-            if (cmd === 'fontName') target.style.fontFamily = val;
-            if (cmd === 'foreColor') target.style.color = val;
-            if (cmd === 'bold') target.style.fontWeight = (target.style.fontWeight === 'bold' || parseInt(window.getComputedStyle(target).fontWeight) >= 700) ? 'normal' : 'bold';
-            if (cmd === 'italic') target.style.fontStyle = (target.style.fontStyle === 'italic') ? 'normal' : 'italic';
-            if (cmd === 'underline') target.style.textDecoration = (target.style.textDecoration.includes('underline')) ? 'none' : 'underline';
-        }
-        
-        setTimeout(() => { if (typeof syncTextStyles === 'function') syncTextStyles(activeBlock); }, 10);
-    }
-    // ── Event Listeners: Wire panel controls → applyFormat ────────────────────
-
-    // Style buttons (Bold, Italic, Underline, Alignment)
+    // A. BUTTONS (Bold, Italic, Underline, Alignment)
+    // Use mousedown.preventDefault() ONLY on these buttons so the canvas doesn't lose text selection
     document.querySelectorAll('.fmt-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('mousedown', e => e.preventDefault()); 
+        btn.addEventListener('click', e => {
             e.preventDefault();
-            applyFormat(btn.dataset.cmd, null);
+            const cmd = btn.dataset.cmd;
+            const target = getActiveTextTarget();
+            if (!target) return;
+
+            if (['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'].includes(cmd)) {
+                if (cmd === 'justifyLeft') target.style.textAlign = 'left';
+                if (cmd === 'justifyCenter') target.style.textAlign = 'center';
+                if (cmd === 'justifyRight') target.style.textAlign = 'right';
+                if (cmd === 'justifyFull') target.style.textAlign = 'justify';
+            } else {
+                document.execCommand(cmd, false, null);
+            }
+            if (typeof syncTextStyles === 'function') syncTextStyles(activeBlock);
         });
     });
 
-    // Text type (block format)
-    const blockSelect = document.getElementById('fmt-block');
-    if (blockSelect) {
-        blockSelect.addEventListener('change', e => applyFormat('formatBlock', e.target.value));
+    // B. SLIDERS, COLORS, AND DROPDOWNS
+    // Apply styles directly to the active block's CSS. No focus stealing, no execCommand.
+    function updateBlockStyle(prop, val) {
+        const target = getActiveTextTarget();
+        if (target) target.style[prop] = val;
     }
 
-    // Font family
-    const fontSelect = document.getElementById('fmt-font');
-    if (fontSelect) {
-        fontSelect.addEventListener('change', e => applyFormat('fontName', e.target.value));
+    const sizeSlider = document.getElementById('fmt-size-slider');
+    const sizeInput = document.getElementById('fmt-size-input');
+    if (sizeSlider && sizeInput) {
+        sizeSlider.addEventListener('input', e => { 
+            sizeInput.value = e.target.value; 
+            updateBlockStyle('fontSize', e.target.value + 'px'); 
+        });
+        sizeInput.addEventListener('input', e => { 
+            sizeSlider.value = e.target.value; 
+            updateBlockStyle('fontSize', e.target.value + 'px'); 
+        });
     }
 
-    // Text color
     const colorPicker = document.getElementById('fmt-color');
     if (colorPicker) {
-        colorPicker.addEventListener('input', e => applyFormat('foreColor', e.target.value));
+        colorPicker.addEventListener('input', e => updateBlockStyle('color', e.target.value));
     }
 
-    // Font size slider + number input
-    const sizeSlider = document.getElementById('fmt-size-slider');
-    const sizeInput  = document.getElementById('fmt-size-input');
-    if (sizeSlider) {
-        sizeSlider.addEventListener('input', e => {
-            if (sizeInput) sizeInput.value = e.target.value;
-            applyFormat('fontSizePx', e.target.value);
-        });
-    }
-    if (sizeInput) {
-        sizeInput.addEventListener('input', e => {
-            if (sizeSlider) sizeSlider.value = e.target.value;
-            applyFormat('fontSizePx', e.target.value);
-        });
-    }
+    const trackSlider = document.getElementById('fmt-tracking');
+    if (trackSlider) trackSlider.addEventListener('input', e => updateBlockStyle('letterSpacing', e.target.value + 'px'));
 
-    // Tracking (letter-spacing)
-    const trackingSlider = document.getElementById('fmt-tracking');
-    if (trackingSlider) {
-        trackingSlider.addEventListener('input', e => applyFormat('letterSpacing', e.target.value));
-    }
+    const leadSlider = document.getElementById('fmt-leading');
+    if (leadSlider) leadSlider.addEventListener('input', e => updateBlockStyle('lineHeight', e.target.value));
 
-    // Leading (line-height)
-    const leadingSlider = document.getElementById('fmt-leading');
-    if (leadingSlider) {
-        leadingSlider.addEventListener('input', e => applyFormat('lineHeight', e.target.value));
-    }
+    const fontDrop = document.getElementById('fmt-font');
+    if (fontDrop) fontDrop.addEventListener('change', e => updateBlockStyle('fontFamily', e.target.value));
 
-    // Width & Min-Height
     const widthInput = document.getElementById('fmt-width');
-    if (widthInput) {
-        widthInput.addEventListener('input', e => applyFormat('width', e.target.value));
-    }
-    const heightInput = document.getElementById('fmt-height');
-    if (heightInput) {
-        heightInput.addEventListener('input', e => applyFormat('minHeight', e.target.value));
-    }
+    if (widthInput) widthInput.addEventListener('input', e => {
+        const wWrap = activeBlock ? (activeBlock.closest('.canvas-block') || activeBlock) : null;
+        if (wWrap) wWrap.style.width = e.target.value + '%';
+    });
 
+    const heightInput = document.getElementById('fmt-height');
+    if (heightInput) heightInput.addEventListener('input', e => {
+        const hWrap = activeBlock ? (activeBlock.closest('.canvas-block') || activeBlock) : null;
+        if (hWrap) hWrap.style.minHeight = e.target.value ? (e.target.value + 'px') : 'auto';
+    });
+
+    const blockSelect = document.getElementById('fmt-block');
+    if (blockSelect) {
+        blockSelect.addEventListener('change', e => {
+            const target = getActiveTextTarget();
+            if (!target || (target.id && target.id.startsWith('default-')) || target.closest('.meta-data')) return;
+            const newTag = e.target.value.toUpperCase();
+            if (target.tagName === newTag) return;
+            
+            const newEl = document.createElement(newTag);
+            Array.from(target.attributes).forEach(attr => newEl.setAttribute(attr.name, attr.value));
+            newEl.innerHTML = target.innerHTML;
+            target.parentNode.replaceChild(newEl, target);
+            if (activeBlock === target) activeBlock = newEl;
+            newEl.focus();
+        });
+    }
 
         // --- 5. VIDEO SETTINGS ---
     const vidUrl = document.getElementById('vid-url');
@@ -1657,6 +1551,7 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
 
 
 
