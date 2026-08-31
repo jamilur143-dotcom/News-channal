@@ -851,22 +851,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ─── Core apply function ─────────────────────────────────────────────────
+    // Track canvas selection to prevent loss when panel controls are used
+    let savedCanvasRange = null;
+    document.addEventListener('selectionchange', () => {
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            const canvas = document.getElementById('main-canvas');
+            if (canvas && canvas.contains(range.commonAncestorContainer)) {
+                savedCanvasRange = range.cloneRange();
+            }
+        }
+    });
+
     function applyFormat(cmd, val) {
         const sel = window.getSelection();
-        const hasSelection = sel.rangeCount > 0 && !sel.isCollapsed && document.getElementById('main-canvas').contains(sel.anchorNode);
+        let activeRange = null;
+        let isCollapsed = true;
 
-        // --- 1. BLOCK LEVEL COMMANDS ---
-        // Alignment, Tracking, Leading, Dimensions, and Tag Conversion affect the block.
+        const canvas = document.getElementById('main-canvas');
+        if (sel.rangeCount > 0 && canvas && canvas.contains(sel.anchorNode)) {
+            activeRange = sel.getRangeAt(0);
+            isCollapsed = sel.isCollapsed;
+        } else if (savedCanvasRange) {
+            activeRange = savedCanvasRange;
+            isCollapsed = savedCanvasRange.collapsed;
+        }
+
+        if (!activeRange) return; // No selection or cursor in canvas ever
+
         const blockCommands = ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'letterSpacing', 'lineHeight', 'width', 'minHeight', 'formatBlock'];
         
+        // --- 1. BLOCK LEVEL COMMANDS ---
         if (blockCommands.includes(cmd)) {
-            // Find the closest editable block from the selection
-            let target = null;
-            if (sel.rangeCount > 0) {
-                let node = sel.anchorNode;
-                if (node.nodeType === 3) node = node.parentNode; // text node
-                target = node.closest('.edit-text') || node.closest('.canvas-block');
-            }
+            let node = activeRange.commonAncestorContainer;
+            if (node.nodeType === 3) node = node.parentNode;
+            
+            let target = node.closest('.edit-text') || node.closest('.canvas-block');
             if (!target && activeBlock) {
                 target = activeBlock.classList.contains('edit-text') ? activeBlock : activeBlock.querySelector('.edit-text') || activeBlock;
             }
@@ -900,40 +921,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                     
                     target.parentNode.replaceChild(newEl, target);
                     if (activeBlock === target) activeBlock = newEl;
-                    
-                    // Restore selection inside the new element
-                    const newRange = document.createRange();
-                    newRange.selectNodeContents(newEl);
-                    newRange.collapse(false);
-                    sel.removeAllRanges();
-                    sel.addRange(newRange);
                     break;
             }
+            setTimeout(() => syncTextStyles(activeBlock), 10);
             return;
         }
 
         // --- 2. INLINE / SELECTION COMMANDS ---
-        if (!hasSelection) {
-            // "If no text is actively highlighted, the panel controls should do nothing."
-            return;
-        }
+        if (isCollapsed) return; // Strict directive: Do nothing if no text is highlighted
 
-        const range = sel.getRangeAt(0);
-        
-        // Helper to apply CSS to the range by wrapping in a span
         const applySpanStyle = (cssProp, cssVal) => {
             try {
                 const span = document.createElement('span');
                 span.style[cssProp] = cssVal;
-                const contents = range.extractContents();
+                const contents = activeRange.extractContents();
                 span.appendChild(contents);
-                range.insertNode(span);
+                activeRange.insertNode(span);
                 
-                // Keep it selected
+                // Re-select
                 sel.removeAllRanges();
                 const newRange = document.createRange();
                 newRange.selectNodeContents(span);
                 sel.addRange(newRange);
+                savedCanvasRange = newRange.cloneRange(); // update stored
             } catch (e) {
                 console.error("Selection wrapping error:", e);
             }
@@ -941,23 +951,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         switch (cmd) {
             case 'bold':
-                // Check if already bold by looking at parent
                 let isBold = false;
-                let pNode = range.commonAncestorContainer;
+                let pNode = activeRange.commonAncestorContainer;
                 if(pNode.nodeType === 3) pNode = pNode.parentNode;
                 if(window.getComputedStyle(pNode).fontWeight >= 700) isBold = true;
                 applySpanStyle('fontWeight', isBold ? 'normal' : 'bold');
                 break;
             case 'italic':
                 let isItal = false;
-                let iNode = range.commonAncestorContainer;
+                let iNode = activeRange.commonAncestorContainer;
                 if(iNode.nodeType === 3) iNode = iNode.parentNode;
                 if(window.getComputedStyle(iNode).fontStyle === 'italic') isItal = true;
                 applySpanStyle('fontStyle', isItal ? 'normal' : 'italic');
                 break;
             case 'underline':
                 let isUnd = false;
-                let uNode = range.commonAncestorContainer;
+                let uNode = activeRange.commonAncestorContainer;
                 if(uNode.nodeType === 3) uNode = uNode.parentNode;
                 if(window.getComputedStyle(uNode).textDecorationLine.includes('underline')) isUnd = true;
                 applySpanStyle('textDecoration', isUnd ? 'none' : 'underline');
@@ -974,6 +983,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         setTimeout(() => syncTextStyles(activeBlock), 10);
     }
+
 
     // ─── Style buttons (Bold, Italic, Underline, Alignment) ─────────────────
     document.querySelectorAll('.fmt-btn').forEach(btn => {
@@ -1706,6 +1716,7 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
 
 
 
