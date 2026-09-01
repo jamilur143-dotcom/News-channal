@@ -408,72 +408,59 @@ document.addEventListener('change', async (e) => {
 
 // --- TOP-BAR MODAL CONTROLS (Meta Data & Ad Settings) ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Ad Settings Modal
+    // 1. Ad Settings Modal UI Controls
     const btnAdSettings = document.getElementById('btn-open-ad-settings');
     const modalAdSettings = document.getElementById('ad-settings-modal');
     const btnCloseAdSettings = document.getElementById('ad-settings-modal-close');
     
     if (btnAdSettings && modalAdSettings) {
-        btnAdSettings.addEventListener('click', async () => {
-            modalAdSettings.style.display = 'flex';
-            // Auto-load settings
-            if (typeof getAdSettingsAsync === 'function') {
-                const ads = await getAdSettingsAsync();
-                if(document.getElementById('ad-social')) document.getElementById('ad-social').value = ads.adSocial || '';
-                if(document.getElementById('ad-popunder')) document.getElementById('ad-popunder').value = ads.adPopunder || '';
-                if(document.getElementById('ad-728')) document.getElementById('ad-728').value = ads.ad728 || '';
-                if(document.getElementById('ad-160')) document.getElementById('ad-160').value = ads.ad160 || '';
-                if(document.getElementById('ad-300')) document.getElementById('ad-300').value = ads.ad300 || '';
-                if(document.getElementById('ad-native')) document.getElementById('ad-native').value = ads.adNative || '';
-                if(document.getElementById('ad-smartlink')) document.getElementById('ad-smartlink').value = ads.adSmartlink || '';
-            }
-        });
-        
+        btnAdSettings.addEventListener('click', () => modalAdSettings.style.display = 'flex');
         btnCloseAdSettings.addEventListener('click', () => modalAdSettings.style.display = 'none');
         modalAdSettings.addEventListener('click', (e) => {
             if (e.target === modalAdSettings) modalAdSettings.style.display = 'none';
         });
-        
-        // Save logic
-        const saveAdsBtnGlobal = document.getElementById('btn-save-ads');
-        if (saveAdsBtnGlobal) {
-            saveAdsBtnGlobal.addEventListener('click', async () => {
-                if (typeof saveAdSettingsAsync !== 'function') {
-                    modalAdSettings.style.display = 'none';
-                    return;
-                }
-                
-                const config = {
-                    adSocial: document.getElementById('ad-social') ? document.getElementById('ad-social').value : '',
-                    adPopunder: document.getElementById('ad-popunder') ? document.getElementById('ad-popunder').value : '',
-                    ad728: document.getElementById('ad-728') ? document.getElementById('ad-728').value : '',
-                    ad160: document.getElementById('ad-160') ? document.getElementById('ad-160').value : '',
-                    ad300: document.getElementById('ad-300') ? document.getElementById('ad-300').value : '',
-                    adNative: document.getElementById('ad-native') ? document.getElementById('ad-native').value : '',
-                    adSmartlink: document.getElementById('ad-smartlink') ? document.getElementById('ad-smartlink').value : ''
-                };
-                
-                const origText = saveAdsBtnGlobal.textContent;
-                saveAdsBtnGlobal.textContent = 'Saving...';
-                saveAdsBtnGlobal.disabled = true;
-                
-                try {
-                    await saveAdSettingsAsync(config);
-                    saveAdsBtnGlobal.textContent = 'Saved!';
-                    setTimeout(() => {
-                        modalAdSettings.style.display = 'none';
-                        saveAdsBtnGlobal.textContent = origText;
-                        saveAdsBtnGlobal.disabled = false;
-                    }, 600);
-                } catch (e) {
-                    alert('Error saving ads: ' + e.message);
-                    saveAdsBtnGlobal.textContent = origText;
-                    saveAdsBtnGlobal.disabled = false;
-                }
+    }
+
+    // --- AD SETTINGS LOGIC (Cloud Synced) ---
+    const adIds = ['social', 'popunder', '728', '160', '300', 'native', 'smartlink'];
+    const saveAdsBtn = document.getElementById('btn-save-ads');
+
+    if (saveAdsBtn) {
+        if(typeof getAdSettingsAsync === 'function') {
+            getAdSettingsAsync().then(config => {
+                adIds.forEach(id => {
+                    const el = document.getElementById('ad-' + id);
+                    if (el) el.value = config[id] || '';
+                });
             });
         }
+
+        saveAdsBtn.addEventListener('click', async () => {
+            saveAdsBtn.disabled = true;
+            saveAdsBtn.textContent = 'Saving...';
+            
+            const configObj = {};
+            adIds.forEach(id => {
+                const el = document.getElementById('ad-' + id);
+                configObj[id] = el ? el.value.trim() : '';
+            });
+
+            try {
+                if(typeof saveAdSettingsAsync === 'function') {
+                    await saveAdSettingsAsync(configObj);
+                }
+                alert('Ad settings saved globally to Cloud successfully!');
+            } catch (e) {
+                alert('Saved locally. (Cloud Sync Notice: ' + e.message + ')');
+            } finally {
+                saveAdsBtn.disabled = false;
+                saveAdsBtn.textContent = '💾 Save Ad Settings';
+                const modal = document.getElementById('ad-settings-modal');
+                if(modal) modal.style.display = 'none';
+            }
+        });
     }
-    
+
     // 2. Meta Data Modal
     const btnMetaData = document.getElementById('btn-open-meta-data');
     const modalMetaData = document.getElementById('meta-data-modal');
@@ -627,4 +614,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
 

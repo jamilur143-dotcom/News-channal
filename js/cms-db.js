@@ -210,77 +210,39 @@ async function deleteArticle(id) {
 
 // Global Cloud Ad Settings (Synced across all users and browsers)
 async function getAdSettingsAsync() {
-  const defaults = {
-    adSocial: localStorage.getItem('ad_social') || '',
-    adPopunder: localStorage.getItem('ad_popunder') || '',
-    ad728: localStorage.getItem('ad_728') || '',
-    ad160: localStorage.getItem('ad_160') || '',
-    ad300: localStorage.getItem('ad_300') || '',
-    adNative: localStorage.getItem('ad_native') || '',
-    adSmartlink: localStorage.getItem('ad_smartlink') || ''
-  };
-
-  const firestore = getFirestoreDb();
+  const firestore = typeof getFirestoreDb === 'function' ? getFirestoreDb() : null;
+  const defaultConfig = { social: '', popunder: '', b728: '', b160: '', b300: '', native: '', smartlink: '' };
+  
   if (firestore) {
     try {
       const doc = await firestore.collection('nexus_settings').doc('ad_config').get();
       if (doc.exists) {
         const data = doc.data();
-        if (data.adSocial !== undefined) localStorage.setItem('ad_social', data.adSocial);
-        if (data.adPopunder !== undefined) localStorage.setItem('ad_popunder', data.adPopunder);
-        if (data.ad728 !== undefined) localStorage.setItem('ad_728', data.ad728);
-        if (data.ad160 !== undefined) localStorage.setItem('ad_160', data.ad160);
-        if (data.ad300 !== undefined) localStorage.setItem('ad_300', data.ad300);
-        if (data.adNative !== undefined) localStorage.setItem('ad_native', data.adNative);
-        if (data.adSmartlink !== undefined) localStorage.setItem('ad_smartlink', data.adSmartlink);
-        return {
-          adSocial: data.adSocial || '',
-          adPopunder: data.adPopunder || '',
-          ad728: data.ad728 || '',
-          ad160: data.ad160 || '',
-          ad300: data.ad300 || '',
-          adNative: data.adNative || '',
-          adSmartlink: data.adSmartlink || ''
-        };
+        Object.keys(defaultConfig).forEach(k => {
+            if(data[k] !== undefined) localStorage.setItem('ad_'+k, data[k]);
+        });
+        return { ...defaultConfig, ...data };
       }
-    } catch (e) {
-      console.warn("Firestore ad settings fetch error:", e);
-    }
+    } catch (e) { console.warn("Firestore ad fetch error:", e); }
   }
-  return defaults;
+  
+  Object.keys(defaultConfig).forEach(k => { defaultConfig[k] = localStorage.getItem('ad_'+k) || ''; });
+  return defaultConfig;
 }
 
-async function saveAdSettingsAsync(config) {
-  if (config.adSocial !== undefined) localStorage.setItem('ad_social', config.adSocial);
-  if (config.adPopunder !== undefined) localStorage.setItem('ad_popunder', config.adPopunder);
-  if (config.ad728 !== undefined) localStorage.setItem('ad_728', config.ad728);
-  if (config.ad160 !== undefined) localStorage.setItem('ad_160', config.ad160);
-  if (config.ad300 !== undefined) localStorage.setItem('ad_300', config.ad300);
-  if (config.adNative !== undefined) localStorage.setItem('ad_native', config.adNative);
-  if (config.adSmartlink !== undefined) localStorage.setItem('ad_smartlink', config.adSmartlink);
-
-  const firestore = getFirestoreDb();
+async function saveAdSettingsAsync(configObj) {
+  Object.keys(configObj).forEach(k => localStorage.setItem('ad_'+k, configObj[k]));
+  const firestore = typeof getFirestoreDb === 'function' ? getFirestoreDb() : null;
   if (firestore) {
     try {
-      await firestore.collection('nexus_settings').doc('ad_config').set({
-        adSocial: config.adSocial || '',
-        adPopunder: config.adPopunder || '',
-        ad728: config.ad728 || '',
-        ad160: config.ad160 || '',
-        ad300: config.ad300 || '',
-        adNative: config.adNative || '',
-        adSmartlink: config.adSmartlink || '',
-        updatedAt: new Date().toISOString()
-      });
-      console.log("Ad settings saved to Firestore cloud successfully.");
+      configObj.updatedAt = new Date().toISOString();
+      await firestore.collection('nexus_settings').doc('ad_config').set(configObj);
       return true;
-    } catch (e) {
-      console.error("Failed to save ad settings to Firestore:", e);
-      throw e;
-    }
+    } catch (e) { throw e; }
   }
   return false;
 }
+
 
 
 
