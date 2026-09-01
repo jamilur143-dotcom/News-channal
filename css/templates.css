@@ -599,32 +599,195 @@
 
     /* 
        ==========================================
-       TEMPLATE 5: Immersive Hero
+       TEMPLATE 5: SaaS Blog Centered
        ==========================================
     */
-    .visual-canvas.template-5 .hero-media { 
-        width: 100%; height: 75vh; min-height: 550px; 
-        display: flex; flex-direction: column; justify-content: center; align-items: flex-start; 
-        padding: 40px 10%; margin-bottom: 50px; background-color: #1a202c; border: none; border-radius: 0;
+    .visual-canvas.template-5 {
+        display: grid;
+        grid-template-columns: [full-start] 1fr [content-start] minmax(0, 760px) [content-end] 1fr [full-end];
+        row-gap: 20px;
+        padding: 80px 24px;
+        background-color: #ffffff;
     }
-    .visual-canvas.template-5 .hero-media::before {
-        content: ""; position: absolute; inset: 0;
-        background: rgba(0,0,0,0.6);
-        z-index: 1; pointer-events: none;
+    .visual-canvas.template-5 .article-layout-wrapper,
+    .visual-canvas.template-5 .article-container {
+        display: contents;
     }
-    .visual-canvas.template-5 .hero-subject-placeholder { display: none !important; }
-    .visual-canvas.template-5 #default-hero-img { z-index: 0; }
-    
-    .visual-canvas.template-5 #default-title { 
-        z-index: 2; position: relative; color: #ffffff !important; 
-        text-align: left; font-size: clamp(2.5rem, 6vw, 4.5rem); margin-bottom: 24px; max-width: 900px;
+    .visual-canvas.template-5 > *,
+    .visual-canvas.template-5 .article-container > * {
+        grid-column: content;
     }
-    .visual-canvas.template-5 .meta-data { 
-        z-index: 2; position: relative; color: #ffffff; border: none; 
-        justify-content: flex-start; padding-bottom: 0; margin-bottom: 0; gap: 40px;
+
+    /* Ordering */
+    .visual-canvas.template-5 #ad-top { order: 1; }
+    .visual-canvas.template-5 #default-title { order: 2; }
+    .visual-canvas.template-5 #default-content { order: 3; }
+    .visual-canvas.template-5 .meta-data { order: 4; }
+    .visual-canvas.template-5 #default-hero { order: 5; }
+    .visual-canvas.template-5 #default-hero-caption { order: 6; text-align: center; margin-bottom: 20px; margin-top: -10px; }
+    .visual-canvas.template-5 #dropzone { order: 7; }
+    .visual-canvas.template-5 .article-sidebar { order: 7; display: none !important; }
+
+    /* 1. Title */
+    .visual-canvas.template-5 #default-title {
+        text-align: center;
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(2.2rem, 4vw, 3.2rem);
+        font-weight: 600;
+        color: #1a1a1a;
+        line-height: 1.2;
+        margin-bottom: 24px;
+        letter-spacing: -0.02em;
     }
-    .visual-canvas.template-5 .meta-data span strong { color: #ffffff; }
-    .visual-canvas.template-5 .meta-data span small { color: rgba(255,255,255,0.7); }
+
+    /* 2. Intro Text */
+    .visual-canvas.template-5 #default-content {
+        text-align: center;
+        font-family: 'Inter', sans-serif;
+        font-size: 1.15rem;
+        color: #64748b;
+        line-height: 1.6;
+        margin-bottom: 50px;
+        max-width: 90%;
+        justify-self: center;
+    }
+
+    /* 3. Meta Data */
+    .visual-canvas.template-5 .meta-data {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: none;
+        border-bottom: none;
+        padding: 0;
+        margin-bottom: 40px;
+        width: 100%;
+    }
+
+    /* Left side: Author */
+    .visual-canvas.template-5 .meta-data > span:nth-child(3) {
+        order: 1;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto;
+        column-gap: 12px;
+        align-items: center;
+    }
+    .visual-canvas.template-5 .meta-data > span:nth-child(3)::before {
+        content: "";
+        grid-column: 1;
+        grid-row: 1 / 3;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background-color: #e2e8f0;
+    }
+    .visual-canvas.template-5 .meta-data > span:nth-child(3) small {
+        grid-column: 2;
+        grid-row: 1;
+        font-size: 0; /* hide original text */
+        color: #94a3b8;
+        text-transform: none;
+        letter-spacing: 0;
+        margin: 0;
+        line-height: 1;
+        align-self: end;
+    }
+    .visual-canvas.template-5 .meta-data > span:nth-child(3) small::after {
+        content: "Written by";
+        font-size: 0.75rem;
+    }
+    .visual-canvas.template-5 .meta-data > span:nth-child(3) strong {
+        grid-column: 2;
+        grid-row: 2;
+        font-size: 0.95rem;
+        color: #111;
+        line-height: 1;
+        align-self: start;
+        margin-top: 4px;
+    }
+
+    /* Right side: Category, Date, Read Time Pills */
+    .visual-canvas.template-5 .meta-data > span:nth-child(2) {
+        order: 2;
+        margin-left: auto; /* push to right */
+    }
+    .visual-canvas.template-5 .meta-data > span:nth-child(1) {
+        order: 3;
+        margin-left: 12px;
+    }
+    .visual-canvas.template-5 .meta-data > span:nth-child(1),
+    .visual-canvas.template-5 .meta-data > span:nth-child(2) {
+        flex-direction: row;
+        align-items: center;
+    }
+    .visual-canvas.template-5 .meta-data > span:nth-child(1) small,
+    .visual-canvas.template-5 .meta-data > span:nth-child(2) small {
+        display: none;
+    }
+    .visual-canvas.template-5 .meta-data > span:nth-child(1) strong,
+    .visual-canvas.template-5 .meta-data > span:nth-child(2) strong {
+        border: 1px solid #cbd5e1;
+        border-radius: 20px;
+        padding: 6px 16px;
+        font-size: 0.75rem;
+        color: #475569;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+    }
+    .visual-canvas.template-5 .meta-data > span:nth-child(1)::after {
+        content: "4 min read";
+        border: 1px solid #cbd5e1;
+        border-radius: 20px;
+        padding: 6px 16px;
+        font-size: 0.75rem;
+        color: #475569;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        margin-left: 12px;
+        display: inline-block;
+    }
+
+    /* 4. Hero Image */
+    .visual-canvas.template-5 #default-hero {
+        width: 100%;
+        min-height: 400px;
+        height: auto;
+        border-radius: 24px;
+        box-shadow: none;
+        margin-bottom: 50px;
+        border: none;
+        aspect-ratio: 16/10;
+        object-fit: cover;
+    }
+    .visual-canvas.template-5 .hero-subject-placeholder { border-radius: 24px; width: 100%; height: 100%; background: #f1f5f9; }
+
+    /* 5. Dropzone Content */
+    .visual-canvas.template-5 #dropzone {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.05rem;
+        line-height: 1.8;
+        color: #52525b;
+    }
+    .visual-canvas.template-5 #dropzone h1,
+    .visual-canvas.template-5 #dropzone h2,
+    .visual-canvas.template-5 #dropzone h3 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #18181b;
+        margin-top: 2em;
+        margin-bottom: 0.8em;
+    }
+
+    /* Responsive */
+    @media(max-width: 768px) {
+        .visual-canvas.template-5 { padding: 40px 16px; }
+        .visual-canvas.template-5 .meta-data { flex-direction: column; gap: 20px; align-items: flex-start; }
+        .visual-canvas.template-5 .meta-data > span:nth-child(2) { margin-left: 0; }
+        .visual-canvas.template-5 .meta-data > span:nth-child(1) { margin-left: 0; margin-top: 10px; }
+        .visual-canvas.template-5 .meta-data > span:nth-child(1)::after { margin-left: 0; margin-top: 10px; }
+        .visual-canvas.template-5 #default-hero { border-radius: 12px; margin-bottom: 30px; }
+    }
 
     /* 
        ==========================================
@@ -989,6 +1152,8 @@
         grid-template-columns: 1fr;
     }
 }
+
+
 
 
 
