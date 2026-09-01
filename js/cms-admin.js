@@ -116,8 +116,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             const type = e.dataTransfer.getData('type');
             if(!type) return;
 
+            // SMART AD ROUTING (Horizontal and Vertical Banners)
+            if(type === 'ad-h') {
+                const adTop = document.getElementById('ad-top');
+                const adBottom = document.getElementById('ad-bottom');
+                if(adTop && adTop.style.display === 'none') {
+                    adTop.style.display = 'flex';
+                } else if(adBottom && adBottom.style.display === 'none') {
+                    adBottom.style.display = 'flex';
+                } else {
+                    alert('Both Top and Bottom Banner ad slots are already filled!');
+                }
+                return;
+            }
+            if(type === 'ad-v') {
+                const adSidebar = document.getElementById('ad-sidebar');
+                if(adSidebar && adSidebar.style.display === 'none') {
+                    adSidebar.style.display = 'flex';
+                    const sidebarContainer = adSidebar.closest('.article-sidebar');
+                    if (sidebarContainer) sidebarContainer.classList.add('active');
+                } else {
+                    alert('Sidebar Ad slot is already filled!');
+                }
+                return;
+            }
+
+            // NORMAL ELEMENTS, SPLIT & INLINE ADS
             let targetDropzone = e.target.closest('.inner-dropzone') || dropzone;
-            if(targetDropzone && ['p', 'img', 'vid'].includes(type)) {
+            if(targetDropzone && ['p', 'img', 'vid', 'ad-sq', 'split'].includes(type)) {
                 let block = document.createElement('div');
                 block.className = 'canvas-block';
                 block.dataset.type = type;
@@ -126,10 +152,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if(type === 'p') inner = '<div contenteditable="true" class="edit-text edit-p" data-type="text" placeholder="Start typing new paragraph..."></div>';
                 if(type === 'img') inner = '<div class="img-ph" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:flex; justify-content:center; align-items:center; cursor:pointer; height:250px; background:#f1f5f9;">[img] Click to upload</div><img src="" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:none; width:100%; object-fit:cover; border-radius:4px;" /><input type="file" class="hidden-file-input" accept="image/*" style="display:none;">';
                 if(type === 'vid') inner = '<div class="vid-ph">&#9654; Set YouTube URL</div><iframe src="" style="display:none; width:100%; aspect-ratio:16/9; border:none;" allowfullscreen></iframe>';
+                if(type === 'ad-sq') inner = `<aside class="ad-inline ad-square" contenteditable="false" style="background:#f9f9f9; border:1px solid #e0e0e0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:250px;"><span style="font-size:0.7rem; color:#888; text-transform:uppercase; margin-bottom:8px;">Advertisement</span><div style="font-weight:600; color:#aaa;">Inline Square Ad<br/>(300x250)</div></aside>`;
+                if(type === 'split') inner = `<div class="split-container" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; padding-top:20px;"><div class="inner-dropzone" style="border:1px dashed #ccc; padding:16px; min-height:100px;"></div><div class="inner-dropzone" style="border:1px dashed #ccc; padding:16px; min-height:100px;"></div></div>`;
                 
                 block.innerHTML = `<button type="button" class="block-del" onclick="this.closest('.canvas-block').remove();">&times;</button>${inner}`;
                 targetDropzone.appendChild(block);
-                window.bindBlock(block);
+                if (typeof window.bindBlock === 'function') window.bindBlock(block);
             }
         });
     }
@@ -614,5 +642,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
 
 
