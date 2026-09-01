@@ -791,15 +791,15 @@
 
     /* 
        ==========================================
-       TEMPLATE 6: Overlap Card (Science Magazine)
+       TEMPLATE 6: Overlap Header (Clean)
        ==========================================
     */
     .visual-canvas.template-6 { 
-        background-color: #f7f7f7; 
+        background-color: #ffffff; 
         padding-bottom: 80px; 
         padding-left: 0;
     }
-    .visual-canvas.template-6::before { display: none; } /* remove old sidebar */
+    .visual-canvas.template-6::before { display: none; }
     
     /* Hero Image */
     .visual-canvas.template-6 .hero-media { 
@@ -812,7 +812,7 @@
 
     /* Layout Wrapper */
     .visual-canvas.template-6 .article-layout-wrapper {
-        max-width: 1200px;
+        max-width: 900px;
         margin: -160px auto 0;
         position: relative;
         z-index: 10;
@@ -822,11 +822,11 @@
         padding: 0 24px;
     }
 
-    /* Main Container / White Card */
+    /* Main Container (No shadow, blends with page) */
     .visual-canvas.template-6 .article-container {
         background-color: #ffffff;
-        padding: 80px 100px 80px 120px; /* Extra left padding for social icons */
-        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        padding: 60px 40px;
+        box-shadow: none; /* Removed floating shadow */
         flex: 1;
         min-width: 0;
         display: flex;
@@ -834,24 +834,24 @@
         align-items: center;
         position: relative;
     }
-    .visual-canvas.template-6.article-layout-wrapper:not(:has(.article-sidebar.active)) .article-container {
-        max-width: 900px; /* if no sidebar, restrict width */
-    }
 
     /* Reorder Header Content */
     .visual-canvas.template-6 #default-title { order: 2; }
     .visual-canvas.template-6 #default-content { order: 3; margin-bottom: 20px; }
     .visual-canvas.template-6 .meta-data { order: 4; margin-bottom: 50px; }
     .visual-canvas.template-6 #dropzone { order: 5; width: 100%; text-align: left; position: relative; }
-    .visual-canvas.template-6 #default-hero-caption { order: 6; text-align: left; font-size: 0.8rem; color: #888; margin-top: 40px; width: 100%; }
+    .visual-canvas.template-6 #default-hero-caption { order: 6; text-align: center; font-size: 0.8rem; color: #888; margin-top: 40px; width: 100%; }
+
+    /* Remove Social Icons */
+    .visual-canvas.template-6 #dropzone::before { display: none; }
 
     /* 1. Category (Absolute positioned at top) */
     .visual-canvas.template-6 .meta-data {
         display: flex;
-        flex-direction: row-reverse; /* Author then Date */
+        flex-direction: row; /* Side by side */
         justify-content: center;
         align-items: center;
-        gap: 16px;
+        gap: 24px;
         width: 100%;
         border: none;
     }
@@ -879,7 +879,7 @@
         text-align: center;
         margin-top: 40px; /* Space from absolute category */
         margin-bottom: 20px;
-        max-width: 85%;
+        max-width: 90%;
     }
 
     /* 3. Intro Text */
@@ -890,39 +890,37 @@
         color: #666;
         text-align: center;
         margin-bottom: 30px;
-        max-width: 80%;
+        max-width: 85%;
     }
 
     /* Tiny horizontal line */
     .visual-canvas.template-6 #default-content::after {
         content: "";
         display: block;
-        width: 30px;
+        width: 40px;
         height: 1px;
         background-color: #d1d5db;
         margin: 30px auto 0;
     }
 
-    /* 4. Date and Author row */
+    /* 4. Date and Author row (Fixed to row) */
     .visual-canvas.template-6 .meta-data > span:nth-child(3) {
         font-family: 'Inter', sans-serif;
         font-size: 0.85rem;
         color: #888;
-        display: flex; align-items: center;
+        display: flex; flex-direction: column; align-items: center; gap: 4px;
     }
-    .visual-canvas.template-6 .meta-data > span:nth-child(3) small { font-size: 0; margin: 0; }
-    .visual-canvas.template-6 .meta-data > span:nth-child(3) small::after { content: "By "; font-size: 0.85rem; margin-right: 4px; }
-    .visual-canvas.template-6 .meta-data > span:nth-child(3) strong { font-weight: 500; }
+    .visual-canvas.template-6 .meta-data > span:nth-child(3) small { font-size: 0; margin: 0; text-transform: uppercase; letter-spacing: 1px; color: #a1a1aa; } .visual-canvas.template-6 .meta-data > span:nth-child(3) small::after { content: "BY"; font-size: 0.7rem; }
+    .visual-canvas.template-6 .meta-data > span:nth-child(3) strong { font-weight: 600; color: #555; }
 
     .visual-canvas.template-6 .meta-data > span:nth-child(1) {
         font-family: 'Inter', sans-serif;
         font-size: 0.85rem;
         color: #888;
-        display: flex; align-items: center;
+        display: flex; flex-direction: column; align-items: center; gap: 4px;
     }
-    .visual-canvas.template-6 .meta-data > span:nth-child(1) small { font-size: 0; margin: 0; }
-    .visual-canvas.template-6 .meta-data > span:nth-child(1) small::after { content: "on "; font-size: 0.85rem; margin-right: 4px; }
-    .visual-canvas.template-6 .meta-data > span:nth-child(1) strong { font-weight: 500; }
+    .visual-canvas.template-6 .meta-data > span:nth-child(1) small { font-size: 0; margin: 0; text-transform: uppercase; letter-spacing: 1px; color: #a1a1aa; } .visual-canvas.template-6 .meta-data > span:nth-child(1) small::after { content: "ON"; font-size: 0.7rem; }
+    .visual-canvas.template-6 .meta-data > span:nth-child(1) strong { font-weight: 600; color: #555; }
 
     /* 5. Main Content */
     .visual-canvas.template-6 #dropzone {
@@ -940,39 +938,17 @@
         margin-bottom: 0.8em;
     }
 
-    /* 6. Social Box in Gutter */
-    .visual-canvas.template-6 #dropzone::before {
-        content: "f \00a0\00a0 t \00a0\00a0 g \A \2709 \00a0 \2630 \00a0 \260E";
-        white-space: pre-wrap;
-        position: absolute;
-        left: -100px; 
-        top: 10px;
-        width: 75px;
-        border: 2px solid #333;
-        padding: 10px 5px;
-        font-size: 0.95rem;
-        line-height: 2.2;
-        text-align: center;
-        color: #333;
-        font-family: 'Inter', sans-serif;
-        font-weight: 700;
-    }
-
-    /* 7. Right Sidebar */
+    /* 6. Right Sidebar (Hidden for clean read) */
     .visual-canvas.template-6 .article-sidebar {
-        width: 300px;
-        flex-shrink: 0;
-        margin-top: 350px; /* Align with content */
+        display: none !important;
     }
 
     /* Responsive */
     @media(max-width: 992px) {
-        .visual-canvas.template-6 .article-layout-wrapper { flex-direction: column; padding: 0 16px; margin-top: -80px; }
+        .visual-canvas.template-6 .article-layout-wrapper { margin-top: -80px; padding: 0 16px; }
         .visual-canvas.template-6 .article-container { padding: 40px 24px; }
         .visual-canvas.template-6 #default-title { font-size: 2.2rem; max-width: 100%; }
         .visual-canvas.template-6 #default-content { max-width: 100%; font-size: 1.1rem; }
-        .visual-canvas.template-6 #dropzone::before { display: none; }
-        .visual-canvas.template-6 .article-sidebar { width: 100%; margin-top: 40px; }
     }
 
     /* 
@@ -1290,6 +1266,8 @@
         grid-template-columns: 1fr;
     }
 }
+
+
 
 
 
