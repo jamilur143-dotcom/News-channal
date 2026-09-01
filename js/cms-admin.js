@@ -1,384 +1,75 @@
-    function debugToast(msg) {
-        let toast = document.getElementById('debug-toast');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'debug-toast';
-            toast.style = 'position:fixed; bottom:20px; left:20px; background:rgba(0,0,0,0.8); color:white; padding:10px; border-radius:4px; z-index:99999; font-size:12px; max-width: 400px; word-wrap: break-word;';
-            document.body.appendChild(toast);
-        }
-        toast.innerText = msg;
-        console.log("DEBUG:", msg);
-    }
 // --- GLOBAL HELPERS: URL RESOLUTION & SHORTENER ---
 function getArticleLandingUrl(articleId) {
     const origin = window.location.origin;
     let path = window.location.pathname;
     path = path.replace(/\/admin(\/index\.html|\/)?$/i, '');
-    if (path.endsWith('/index.html')) {
-        path = path.replace(/\/index\.html$/i, '');
-    }
+    if (path.endsWith('/index.html')) path = path.replace(/\/index\.html$/i, '');
     const cleanLanding = (origin + (path ? path : '') + '/landing.html').replace(/([^:])\/\//g, '$1/');
     return `${cleanLanding}?id=${articleId}`;
 }
 
 async function generateShortUrl(longUrl) {
-    // 1. Spoo.me (Instant Direct 0-Second Redirection, Zero Ads, Zero Countdown)
     try {
         const formData = new URLSearchParams();
         formData.append('url', longUrl);
-
         const res = await fetch('https://spoo.me/', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Accept': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
             body: formData.toString()
         });
-
         if (res.ok) {
             const data = await res.json();
-            if (data && data.short_url) {
-                return data.short_url.replace('http://', 'https://');
-            }
+            if (data && data.short_url) return data.short_url.replace('http://', 'https://');
         }
     } catch (e) {
         console.warn("Spoo.me shortener failed, falling back to direct URL:", e);
     }
-
     return longUrl;
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-    
-    // --- AD SETTINGS LOGIC (Cloud Synced) ---
-    const adBannerInput = document.getElementById('global-ad-banner');
-    const adScriptInput = document.getElementById('global-ad-script');
-    const saveAdsBtn = document.getElementById('btn-save-ads');
+// --- CLOUDINARY CONFIGURATION & UPLOAD HELPER ---
+const CLOUDINARY_CLOUD_NAME = 'xlzab0vf';
+const CLOUDINARY_UPLOAD_PRESET = 'l1wscesh';
 
-    if (adBannerInput && adScriptInput && saveAdsBtn) {
-        // Load initial from local then sync with Cloud Firestore
-        adBannerInput.value = localStorage.getItem('adBannerCode') || '';
-        adScriptInput.value = localStorage.getItem('adPopunderCode') || '';
-        
-        getAdSettingsAsync().then(config => {
-            if (config.bannerCode) adBannerInput.value = config.bannerCode;
-            if (config.popunderCode) adScriptInput.value = config.popunderCode;
-        });
-
-        saveAdsBtn.addEventListener('click', async () => {
-            saveAdsBtn.disabled = true;
-            saveAdsBtn.textContent = 'Saving to Cloud...';
-            try {
-                await saveAdSettingsAsync(adBannerInput.value, adScriptInput.value);
-                saveAdsBtn.disabled = false;
-                saveAdsBtn.textContent = 'Save Changes';
-                alert('Ad settings saved globally to Cloud successfully! Ads will now show for all visitors worldwide.');
-            } catch (e) {
-                saveAdsBtn.disabled = false;
-                saveAdsBtn.textContent = 'Save Changes';
-                alert('Saved locally. (Cloud Sync Notice: ' + e.message + ')');
-            }
-        });
+window.uploadToCloudinaryGlobal = async function(file) {
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    const response = await fetch(url, { method: 'POST', body: formData });
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || 'Cloudinary upload failed');
     }
+    const data = await response.json();
+    return data.secure_url;
+}
 
-    // Canvas & Dropzone
+// --- MAIN BUILDER LOGIC ---
+document.addEventListener('DOMContentLoaded', async () => {
+    let activeBlock = null;
     const dropzone = document.getElementById('dropzone');
-    
-    // Dynamic Panels
-    const panels = {
-        
-        'text': document.getElementById('panel-text'),
-        'vid': document.getElementById('panel-vid'),
-        'split': document.getElementById('panel-split')
-    };
-    
-    // Default Template Nodes
     const defaultTitle = document.getElementById('default-title');
     const defaultContent = document.getElementById('default-content');
     const defaultHero = document.getElementById('default-hero');
-    const defaultHeroInput = document.getElementById('default-hero-input');
-    const defaultHeroImg = document.getElementById('default-hero-img');
-    const defaultHeroPh = document.getElementById('default-hero-ph');
-    const defaultHeroOverlay = document.getElementById('default-hero-overlay');
-    const defaultHeroCaption = document.getElementById('default-hero-caption');
-    const metaContainer = document.querySelector('.meta-data');
-    const articleContainer = document.querySelector('.article-container');
     
-    let activeBlock = null;
-
-    // --- 0. TEMPLATE SWITCHER ---
-    const templateImageSizes = {
-        'template1': '1200 x 630 px (16:9)',
-        'template2': '1100 x 600 px (16:9)',
-        'template3': '1100 x 550 px (2:1)',
-        'template4': '900 x 500 px (16:9)',
-        'template5': '1400 x 700 px (Large Banner)',
-        'template6': '1200 x 650 px (Hero Cover)',
-        'template7': '1000 x 500 px (2:1)',
-        'template8': '600 x 700 px (Portrait / Side)',
-        'template9': '400 x 480 px (Author Portrait)'
-    };
-
-    function updateHeroSizeHint(tpl) {
-        const size = templateImageSizes[tpl] || '1200 x 630 px';
-        const badge = document.getElementById('hero-size-badge');
-        if(badge) badge.textContent = `Recommended: ${size}`;
-        const overlaySize = document.getElementById('hero-overlay-size');
-        if(overlaySize) overlaySize.textContent = `(${size})`;
-    }
-
+    // 1. TEMPLATE SWITCHER
     const tplSelect = document.getElementById('template-selector');
-    if(tplSelect) {
-        updateHeroSizeHint(tplSelect.value);
-    }
     if (tplSelect) {
         tplSelect.addEventListener('change', (e) => {
             const canvas = document.getElementById('main-canvas');
-            
-            // 1) RESET FIRST: Move elements back to their standard (Template 1) container order
-            canvas.classList.remove('template-2', 'template-3', 'template-4', 'template-5', 'template-6', 'template-7', 'template-8', 'template-9');
-            
-            if(articleContainer && defaultTitle && metaContainer && defaultContent) {
-                // Ensure they are inside article-container 
-                articleContainer.prepend(defaultContent);
-                articleContainer.prepend(metaContainer);
-                articleContainer.prepend(defaultTitle);
-                if(dropzone) articleContainer.appendChild(dropzone);
-                // Standard T1 Order: Title -> Meta -> Content
-                defaultTitle.after(metaContainer); 
-                metaContainer.after(defaultContent);
-            }
-            if(defaultHero) {
-                const topAd = document.getElementById('ad-top');
-                if(topAd) topAd.after(defaultHero); // Hero at the top
-                else canvas.insertBefore(defaultHero, canvas.firstChild);
-                if(defaultHeroCaption) defaultHero.after(defaultHeroCaption);
-            }
-
-            // Cleanup any temporary wrapper from T8 & T9
-            const oldT8Split = document.getElementById('t8-split-wrap');
-            if(oldT8Split) oldT8Split.remove();
-            const oldT9Header = document.getElementById('t9-header-banner');
-            if(oldT9Header) oldT9Header.remove();
-            const oldT9Grid = document.getElementById('t9-content-grid');
-            if(oldT9Grid) oldT9Grid.remove();
-
-            // 2) APPLY NEW TEMPLATE LAYOUT
-            const val = e.target.value;
-            updateHeroSizeHint(val);
-            if (val === 'template2') {
-                // Template 2: Title -> Meta -> Hero -> Content
-                canvas.classList.add('template-2');
-                if(metaContainer && defaultHero) {
-                    metaContainer.after(defaultHero);
-                    if(defaultHeroCaption) defaultHero.after(defaultHeroCaption);
-                }
-            } else if (val === 'template3') {
-                // Template 3: Meta -> Title -> Intro Paragraph -> Hero -> Rest
-                canvas.classList.add('template-3');
-                if(defaultTitle && metaContainer) defaultTitle.before(metaContainer);
-                if(defaultContent && defaultHero) {
-                    defaultContent.after(defaultHero);
-                    if(defaultHeroCaption) defaultHero.after(defaultHeroCaption);
-                }
-            } else if (val === 'template4') {
-                // Template 4 (Magazine): Title -> Intro Content -> Hero -> Meta Grid -> Rest
-                canvas.classList.add('template-4');
-                if(defaultContent && defaultHero) {
-                    defaultContent.after(defaultHero); 
-                    if(defaultHeroCaption) defaultHero.after(defaultHeroCaption);
-                }
-                if(defaultHero && metaContainer) {
-                    if(defaultHeroCaption) defaultHeroCaption.after(metaContainer);
-                    else defaultHero.after(metaContainer);
-                }
-            } else if (val === 'template5') {
-                // Template 5 (Immersive): Title & Meta go INSIDE the Hero banner.
-                canvas.classList.add('template-5');
-                if(defaultHero && defaultTitle && metaContainer) {
-                    defaultHero.appendChild(defaultTitle);
-                    defaultHero.appendChild(metaContainer);
-                }
-            } else if (val === 'template6') {
-                // Template 6 (Sidebar): Meta, Title, and Intro Content go INSIDE the Hero banner.
-                canvas.classList.add('template-6');
-                if(defaultHero) {
-                    if(metaContainer) defaultHero.appendChild(metaContainer);
-                    if(defaultTitle) defaultHero.appendChild(defaultTitle);
-                    if(defaultContent) defaultHero.appendChild(defaultContent);
-                }
-            } else if (val === 'template7') {
-                // Template 7 (Floating Box): Hero (Top) -> Meta -> Title -> Content
-                canvas.classList.add('template-7');
-                if(defaultTitle && metaContainer) {
-                    defaultTitle.before(metaContainer); // Move Meta ABOVE Title
-                }
-            } else if (val === 'template8') {
-                // Template 8 (Side-by-Side Split Cover)
-                canvas.classList.add('template-8');
-                
-                const splitWrap = document.createElement('div');
-                splitWrap.id = 't8-split-wrap';
-                splitWrap.className = 't8-hero-split';
-                
-                const textWrap = document.createElement('div');
-                textWrap.className = 't8-text-col';
-                
-                const imgWrap = document.createElement('div');
-                imgWrap.className = 't8-img-col';
-        
-                if(articleContainer && defaultHero && defaultTitle) {
-                    articleContainer.prepend(splitWrap);
-                    splitWrap.appendChild(textWrap);
-                    splitWrap.appendChild(imgWrap);
-                    
-                    textWrap.appendChild(metaContainer);
-                    textWrap.appendChild(defaultTitle);
-                    textWrap.appendChild(defaultContent);
-                    imgWrap.appendChild(defaultHero);
-                    if(defaultHeroCaption) imgWrap.appendChild(defaultHeroCaption);
-                }
-            } else if (val === 'template9') {
-                // Template 9: Magazine Editorial (Editor's Note)
-                canvas.classList.add('template-9');
-
-                // 1. Build Header Banner
-                const headerBanner = document.createElement('div');
-                headerBanner.id = 't9-header-banner';
-                headerBanner.className = 't9-header-banner';
-
-                // Background upload button for the header banner
-                const bgUploadBtn = document.createElement('div');
-                bgUploadBtn.className = 't9-bg-upload-btn';
-                bgUploadBtn.style = 'position:absolute; top:12px; right:16px; z-index:10;';
-                bgUploadBtn.innerHTML = `
-                    <button type="button" style="background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.35); backdrop-filter:blur(6px); font-size:0.75rem; font-weight:600; padding:6px 12px; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:6px;">
-                        &#128247; Header BG (1200x320 px)
-                    </button>
-                    <input type="file" class="t9-bg-input" accept="image/*" style="display:none;" />
-                `;
-
-                const bgBtn = bgUploadBtn.querySelector('button');
-                const bgInput = bgUploadBtn.querySelector('input');
-                if(bgBtn && bgInput) {
-                    bgBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        bgInput.click();
-                    });
-                    bgInput.addEventListener('change', async function() {
-                        const file = this.files[0];
-                        if(file) {
-                            const tempUrl = URL.createObjectURL(file);
-                            headerBanner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.85)), url('${tempUrl}')`;
-                            headerBanner.style.backgroundSize = 'cover';
-                            headerBanner.style.backgroundPosition = 'center';
-
-                            try {
-                                const cdnUrl = await window.uploadToCloudinaryGlobal(file);
-                                headerBanner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.85)), url('${cdnUrl}')`;
-                                console.log('Template 9 header background uploaded to Cloudinary:', cdnUrl);
-                            } catch(err) {
-                                console.error('Cloudinary bg upload error:', err);
-                                alert('Cloudinary Upload Failed: ' + err.message);
-                            }
-                        }
-                    });
-                }
-                headerBanner.appendChild(bgUploadBtn);
-
-                const headerLeft = document.createElement('div');
-                headerLeft.className = 't9-header-left';
-                
-                const badge = document.createElement('span');
-                badge.className = 't9-badge';
-                badge.textContent = 'EDITORIAL';
-                headerLeft.appendChild(badge);
-
-                if(defaultTitle) {
-                    headerLeft.appendChild(defaultTitle);
-                }
-
-                const authorCol = document.createElement('div');
-                authorCol.className = 't9-author-col';
-                if(defaultHero) {
-                    authorCol.appendChild(defaultHero);
-                    if(defaultHeroCaption) authorCol.appendChild(defaultHeroCaption);
-                }
-
-                headerBanner.appendChild(headerLeft);
-                headerBanner.appendChild(authorCol);
-
-                const topAd = document.getElementById('ad-top');
-                if(topAd) topAd.after(headerBanner);
-                else canvas.insertBefore(headerBanner, canvas.firstChild);
-
-                // 2. Build 2-Column Body (Left: Content & Dropzone, Right: Quote Card)
-                const contentGrid = document.createElement('div');
-                contentGrid.id = 't9-content-grid';
-                contentGrid.className = 't9-content-grid';
-
-                const leftCol = document.createElement('div');
-                leftCol.className = 't9-left-col';
-
-                if(defaultContent) leftCol.appendChild(defaultContent);
-                if(dropzone) leftCol.appendChild(dropzone);
-
-                const rightCol = document.createElement('div');
-                rightCol.className = 't9-right-col';
-                
-                const quoteCard = document.createElement('div');
-                quoteCard.className = 't9-quote-card';
-                quoteCard.innerHTML = `
-                    <span class="t9-quote-mark">&#10077;</span>
-                    <div contenteditable="true" class="t9-quote-text edit-text" placeholder="Type key takeaway or editor's highlight quote here...">
-                        Inspiring journalism connecting communities with integrity and purpose.
-                    </div>
-                `;
-                rightCol.appendChild(quoteCard);
-
-                contentGrid.appendChild(leftCol);
-                contentGrid.appendChild(rightCol);
-
-                if(articleContainer) {
-                    articleContainer.appendChild(contentGrid);
-                }
+            canvas.className = 'visual-canvas'; 
+            if(e.target.value !== 'template1') {
+                canvas.classList.add(e.target.value.replace('template', 'template-'));
             }
         });
     }
 
-    // --- CLOUDINARY CONFIGURATION & UPLOAD HELPER ---
-    const CLOUDINARY_CLOUD_NAME = 'xlzab0vf';
-    const CLOUDINARY_UPLOAD_PRESET = 'l1wscesh';
-
-    window.uploadToCloudinaryGlobal = async function(file) {
-        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-        const response = await fetch(url, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error?.message || 'Cloudinary upload failed');
-        }
-
-        const data = await response.json();
-        return data.secure_url;
-    }
-
-    // --- 1. HERO IMAGE LOGIC ---
-    // Use event delegation to survive DOM replacements (e.g. loading an article)
+    // 2. HERO IMAGE LOGIC
     document.addEventListener('click', (e) => {
         const hero = e.target.closest('#default-hero');
-        if (hero) {
-            if(e.target.closest('#default-title') || e.target.closest('.meta-data') || e.target.closest('#default-content')) return;
-            const heroInput = document.getElementById('default-hero-input');
-            if(heroInput && e.target !== heroInput) heroInput.click();
+        if (hero && !e.target.closest('#default-title, .meta-data, #default-content')) {
+            document.getElementById('default-hero-input')?.click();
         }
     });
 
@@ -388,41 +79,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             if(file) {
                 const reader = new FileReader();
                 reader.onload = async (ev) => {
-                    const defaultHeroImg = document.getElementById('default-hero-img');
-                    const defaultHeroPh = document.getElementById('default-hero-ph');
-                    const defaultHeroOverlay = document.getElementById('default-hero-overlay');
-                    
-                    if(defaultHeroImg) {
-                        defaultHeroImg.src = ev.target.result;
-                        defaultHeroImg.style.display = 'block';
-                    }
-                    if(defaultHeroPh) defaultHeroPh.style.display = 'none';
-                    if(defaultHeroOverlay) defaultHeroOverlay.style.display = 'none';
-
+                    const img = document.getElementById('default-hero-img');
+                    if(img) { img.src = ev.target.result; img.style.display = 'block'; }
+                    document.getElementById('default-hero-ph')?.style.setProperty('display', 'none');
+                    document.getElementById('default-hero-overlay')?.style.setProperty('display', 'none');
                     try {
                         const cdnUrl = await window.uploadToCloudinaryGlobal(file);
-                        if(defaultHeroImg) defaultHeroImg.src = cdnUrl;
-                        console.log('Hero image successfully uploaded to Cloudinary:', cdnUrl);
-                    } catch (err) {
-                        console.error('Cloudinary upload error:', err);
-                        alert('Cloudinary Upload Failed: ' + err.message);
-                    }
+                        if(img) img.src = cdnUrl;
+                    } catch (err) { alert('Upload Failed: ' + err.message); }
                 };
                 reader.readAsDataURL(file);
             }
         }
     });
 
-    // --- 2. DRAG AND DROP ENGINE (SMART ADS) ---
+    // 3. DRAG AND DROP ENGINE
     document.querySelectorAll('.tool-item').forEach(tool => {
-        tool.addEventListener('dragstart', (e) => {
-            e.dataTransfer.setData('type', tool.dataset.type);
-        });
+        tool.addEventListener('dragstart', (e) => e.dataTransfer.setData('type', tool.dataset.type));
     });
 
     if(dropzone) {
         let lastTarget = null;
-        document.getElementById('main-canvas').addEventListener('dragover', (e) => { 
+        const canvas = document.getElementById('main-canvas');
+        canvas.addEventListener('dragover', (e) => { 
             e.preventDefault(); 
             const target = e.target.closest('.inner-dropzone') || dropzone; 
             if(target !== lastTarget) { 
@@ -431,761 +110,69 @@ document.addEventListener('DOMContentLoaded', async () => {
                 lastTarget = target;
             } 
         });
-        document.getElementById('main-canvas').addEventListener('dragleave', (e) => { 
-            const rect = document.getElementById('main-canvas').getBoundingClientRect();
-            if(e.clientX <= rect.left || e.clientX >= rect.right || e.clientY <= rect.top || e.clientY >= rect.bottom) {
-                if(lastTarget) lastTarget.classList.remove('drag-hover');
-                lastTarget = null;
-            }
-        });
-        
-        document.getElementById('main-canvas').addEventListener('drop', (e) => {
+        canvas.addEventListener('drop', (e) => {
             e.preventDefault();
             document.querySelectorAll('.drag-hover').forEach(el => el.classList.remove('drag-hover'));
-            
             const type = e.dataTransfer.getData('type');
             if(!type) return;
 
-            // SMART AD ROUTING
-            if(type === 'ad-h') {
-                const adTop = document.getElementById('ad-top');
-                const adBottom = document.getElementById('ad-bottom');
-                if(adTop && adTop.style.display === 'none') {
-                    adTop.style.display = 'flex';
-                } else if(adBottom && adBottom.style.display === 'none') {
-                    adBottom.style.display = 'flex';
-                } else {
-                    alert('Both Top and Bottom Banner ad slots are already filled!');
-                }
-                return;
-            }
-            if(type === 'ad-v') {
-                const adSidebar = document.getElementById('ad-sidebar');
-                if(adSidebar && adSidebar.style.display === 'none') {
-                    adSidebar.style.display = 'flex';
-                    adSidebar.parentElement.classList.add('active');
-                } else {
-                    alert('Sidebar Ad slot is already filled!');
-                }
-                return;
-            }
-            if(type === 'ad-sq') {
-                // Moved to Normal Elements
-            }
-
-            // Normal Elements
-            let targetDropzone = e.target.closest('.inner-dropzone') || e.target.closest('#dropzone');
-            if(targetDropzone) {
+            let targetDropzone = e.target.closest('.inner-dropzone') || dropzone;
+            if(targetDropzone && ['p', 'img', 'vid'].includes(type)) {
                 let block = document.createElement('div');
                 block.className = 'canvas-block';
+                block.dataset.type = type;
+
+                let inner = '';
+                if(type === 'p') inner = '<div contenteditable="true" class="edit-text edit-p" data-type="text" placeholder="Start typing new paragraph..."></div>';
+                if(type === 'img') inner = '<div class="img-ph" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:flex; justify-content:center; align-items:center; cursor:pointer; height:250px; background:#f1f5f9;">[img] Click to upload</div><img src="" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:none; width:100%; object-fit:cover; border-radius:4px;" /><input type="file" class="hidden-file-input" accept="image/*" style="display:none;">';
+                if(type === 'vid') inner = '<div class="vid-ph">&#9654; Set YouTube URL</div><iframe src="" style="display:none; width:100%; aspect-ratio:16/9; border:none;" allowfullscreen></iframe>';
                 
-                if(type === 'split') {
-                    if(targetDropzone.classList.contains('inner-dropzone')) {
-                        alert('Cannot place a split layout inside another split layout.');
-                        return;
-                    }
-                    block.classList.add('split-block');
-                    block.dataset.type = 'split';
-                    block.innerHTML = `<button type="button" class="block-del" title="Delete Block" onclick="this.closest('.canvas-block').remove(); event.stopPropagation();">&times;</button>
-                        <div class="split-container" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; padding-top:20px;">
-                            <div class="inner-dropzone" style="border:1px dashed #ccc; padding:16px; min-height:100px;"></div>
-                            <div class="inner-dropzone" style="border:1px dashed #ccc; padding:16px; min-height:100px;"></div>
-                        </div>`;
-                } else {
-                    block.dataset.type = (type === 'ad-sq') ? 'ad' : type;
-
-                    let inner = '';
-                    if(type === 'p') inner = '<div contenteditable="true" class="edit-text edit-p" data-type="text" placeholder="Start typing new paragraph..."></div>';
-                    if(type === 'img') inner = '<div class="img-ph" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:flex; flex-direction:column; gap:6px; justify-content:center; align-items:center; cursor:pointer;"><span>[img] Click to upload image</span><span style="font-size:0.75rem; color:#64748b; background:#e2e8f0; padding:2px 8px; border-radius:10px; font-weight:600;">Recommended: 800 x 500 px (16:9)</span></div><img src="" onclick="this.parentElement.querySelector(\'.hidden-file-input\').click();" style="display:none; width:100%; object-fit:cover; border-radius:4px;" /><input type="file" class="hidden-file-input" accept="image/*" style="display:none;">';
-                    if(type === 'vid') inner = '<div class="vid-ph">&#9654; Click here, then set YouTube URL in the right panel</div><iframe src="" style="display:none; width:100%; aspect-ratio:16/9; border:none; border-radius:4px;" allowfullscreen></iframe>';
-                    if(type === 'ad-sq') inner = `<aside class="ad-inline ad-square" contenteditable="false" style="background:#f9f9f9; border:1px solid #e0e0e0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:250px;">
-                        <span style="font-size:0.7rem; color:#888; text-transform:uppercase; margin-bottom:8px;">Advertisement</span>
-                        <div style="font-weight:600; color:#aaa;">Inline Square Ad<br/>(300x250)</div>
-                    </aside>`;
-
-                    block.innerHTML = `<button type="button" class="block-del" title="Delete Block" onclick="this.closest('.canvas-block').remove(); event.stopPropagation();">&times;</button>${inner}`;
-                }
-
-                // Determine insert position based on where user dropped it
-                const hoverBlock = e.target.closest('.canvas-block');
-                if (hoverBlock && hoverBlock.parentElement === targetDropzone) {
-                    const rect = hoverBlock.getBoundingClientRect();
-                    const midY = rect.top + rect.height / 2;
-                    if (e.clientY < midY) {
-                        hoverBlock.before(block);
-                    } else {
-                        hoverBlock.after(block);
-                    }
-                } else {
-                    targetDropzone.appendChild(block);
-                }
-                
+                block.innerHTML = `<button type="button" class="block-del" onclick="this.closest('.canvas-block').remove();">&times;</button>${inner}`;
+                targetDropzone.appendChild(block);
                 window.bindBlock(block);
-                block.click();
             }
         });
     }
 
-    // Robust event delegation for all remove-ad buttons
-    ['click', 'mousedown', 'touchstart'].forEach(evt => {
-        document.addEventListener(evt, (e) => {
-            const removeBtn = e.target.closest('.remove-ad');
-            if (removeBtn) {
-                if (evt !== 'click') e.preventDefault();
-                e.stopPropagation();
-                const parentAd = removeBtn.closest('.predefined-ad') || removeBtn.parentElement;
-                if (parentAd) {
-                    parentAd.style.display = 'none';
-                    const sidebarContainer = parentAd.closest('.article-sidebar');
-                    if (sidebarContainer) {
-                        sidebarContainer.classList.remove('active');
-                    }
-                }
-            }
-        }, {passive: false});
-    });
-
-        document.querySelectorAll('.move-ad-left').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.querySelector('.article-layout-wrapper').classList.add('sidebar-left');
-            btn.style.display = 'none';
-            btn.nextElementSibling.style.display = 'block';
-        });
-    });
-    document.querySelectorAll('.move-ad-right').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.querySelector('.article-layout-wrapper').classList.remove('sidebar-left');
-            btn.style.display = 'none';
-            btn.previousElementSibling.style.display = 'block';
-        });
-    });
-
-    // --- 3. SELECTION & PANEL SWITCHING ---
+    // 4. BLOCK BINDING
     window.bindBlock = function(block) {
-        // Handle delete button explicitly
-        const delBtn = block.querySelector('.block-del');
-        if (delBtn) {
-            const removeAction = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                block.remove();
-                activatePanel('meta');
-            };
-            delBtn.addEventListener('mousedown', removeAction);
-            delBtn.addEventListener('click', removeAction);
-            delBtn.addEventListener('touchstart', removeAction, {passive: false});
-        }
-
-        ['click', 'focusin', 'keyup'].forEach(evt => {
+        ['click', 'focusin'].forEach(evt => {
             block.addEventListener(evt, (e) => {
-                if (evt !== 'keyup') e.stopPropagation();
-                
-                // Fallback for delete button in case the direct listener was missed
-                if (evt === 'click' && e.target.closest('.block-del')) {
-                    block.remove();
-                    activatePanel('meta');
-                    return;
-                }
-
-                clearActiveStates();
+                e.stopPropagation();
+                document.querySelectorAll('.canvas-block, .edit-text').forEach(b => b.classList.remove('active'));
                 block.classList.add('active');
                 activeBlock = block;
-
-                const type = block.dataset.type;
-                if(type === 'p') {
-                    activatePanel('text');
-                    if (evt !== 'keyup') syncTextStyles(block.querySelector('.edit-text'));
-                } else if(type === 'vid') {
-                    activatePanel('vid');
-                } else if(type === 'split') {
-                    activatePanel('split');
-                    const ratioSelect = document.getElementById('split-layout-ratio');
-                    if(ratioSelect) ratioSelect.value = block.dataset.ratio || '1:1';
-                } else {
-                    activatePanel('meta');
-                }
             });
         });
+    };
 
-        if(block.dataset.type === 'img') {
-            // Event listeners for img-ph, img and fileInput are now handled inline via HTML attributes for maximum reliability.
-        }
-    }
-
-    // Use event delegation for default text elements so they survive DOM replacement during "Edit Article"
-    ['click', 'focusin', 'keyup'].forEach(evt => {
+    ['click', 'focusin'].forEach(evt => {
         document.addEventListener(evt, (e) => {
-            const target = e.target.closest('#default-title, #default-content, #default-hero-caption, .meta-data .edit-text');
+            const target = e.target.closest('#default-title, #default-content, .meta-data .edit-text');
             if (target) {
-                // For keyup, let it bubble so global listeners aren't blocked, but handle our logic.
-                if (evt !== 'keyup') e.stopPropagation();
-                
-                clearActiveStates();
+                e.stopPropagation();
+                document.querySelectorAll('.canvas-block, .edit-text').forEach(b => b.classList.remove('active'));
                 target.classList.add('active');
                 activeBlock = target;
-                activatePanel('text');
-                if (evt !== 'keyup') syncTextStyles(target);
             }
         });
     });
-
-    function clearActiveStates() {
-        if(defaultTitle) defaultTitle.classList.remove('active');
-        if(defaultContent) defaultContent.classList.remove('active');
-        document.querySelectorAll('.canvas-block').forEach(b => b.classList.remove('active'));
-    }
 
     document.body.addEventListener('mousedown', (e) => {
-        if(e.target.closest('.form-panel') || e.target.closest('.publish-card') || e.target.closest('#dynamic-panels') || e.target.closest('.visual-canvas') || e.target.closest('.predefined-ad')) return;
-        clearActiveStates();
+        if(e.target.closest('.form-panel') || e.target.closest('.publish-card') || e.target.closest('.visual-canvas')) return;
+        document.querySelectorAll('.canvas-block, .edit-text').forEach(b => b.classList.remove('active'));
         activeBlock = null;
-        activatePanel('meta');
     });
 
-    function activatePanel(type) {
-        if(type === 'meta') type = 'text'; // Fallback to editing panel
-        Object.values(panels).forEach(p => {
-            if(p) p.style.display = 'none';
-        });
-        if(panels[type]) panels[type].style.display = 'block';
-    }
-
-    function rgbToHex(rgb) {
-        const m = rgb.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
-        if(m) {
-            return "#" + 
-                ("0" + parseInt(m[1], 10).toString(16)).slice(-2) +
-                ("0" + parseInt(m[2], 10).toString(16)).slice(-2) +
-                ("0" + parseInt(m[3], 10).toString(16)).slice(-2);
-        }
-        return rgb;
-    }
-
-    function syncTextStyles(el) {
-        if(!el) return;
-        const innerHeading = el.querySelector('h1, h2, h3, h4, h5, h6'); const computed = window.getComputedStyle(innerHeading || el);
-        
-        const tracking = parseFloat(computed.letterSpacing) || 0;
-        const trackSlider = document.getElementById('fmt-tracking');
-        if(trackSlider) trackSlider.value = tracking;
-
-        const lineHt = computed.lineHeight;
-        let leadVal = 1.8; 
-        if (lineHt !== 'normal') {
-            const pxLineHt = parseFloat(lineHt);
-            const pxFontSz = parseFloat(computed.fontSize);
-            if (!isNaN(pxLineHt) && !isNaN(pxFontSz) && pxFontSz > 0) {
-                leadVal = (pxLineHt / pxFontSz).toFixed(1);
-            }
-        }
-        const leadSlider = document.getElementById('fmt-leading');
-        if(leadSlider) leadSlider.value = leadVal;
-
-        const sizeSlider = document.getElementById('fmt-size-slider');
-        const sizeInput = document.getElementById('fmt-size-input');
-        if(sizeSlider || sizeInput) {
-            const fs = parseFloat(computed.fontSize);
-            if(!isNaN(fs)) {
-                if(sizeSlider) sizeSlider.value = fs;
-                if(sizeInput) sizeInput.value = fs;
-            }
-        }
-
-        const colorPicker = document.getElementById('fmt-color');
-        if(colorPicker && computed.color) {
-            let hex = rgbToHex(computed.color);
-            if(hex.startsWith('#')) colorPicker.value = hex;
-        }
-
-        const parentBlock = el.closest('.canvas-block') || el;
-        const wInput = document.getElementById('fmt-width');
-        if(wInput) {
-            const w = parentBlock.style.width;
-            if(w && w.includes('%')) wInput.value = parseFloat(w);
-            else wInput.value = 100;
-        }
-        const hInput = document.getElementById('fmt-height');
-        if(hInput) {
-            const minH = parentBlock.style.minHeight;
-            if(minH && minH.includes('px')) hInput.value = parseFloat(minH);
-            else hInput.value = '';
-        }
-
-        // Sync Block Type
-        const blockSelect = document.getElementById('fmt-block');
-        if(blockSelect) {
-            const tagName = (innerHeading || el).tagName.toUpperCase();
-            if(tagName === 'DIV' || tagName === 'SPAN' || tagName === 'P') blockSelect.value = 'P';
-            else blockSelect.value = tagName;
-        }
-
-        // Sync Font Family
-        const fontSelect = document.getElementById('fmt-font');
-        if(fontSelect && computed.fontFamily) {
-            // Try to match the exact string, or use the first font name
-            const fontList = computed.fontFamily.split(',');
-            const primaryFont = fontList[0].trim().replace(/['"]/g, '');
-            // We'll just loop and find the closest match
-            for(let i=0; i<fontSelect.options.length; i++) {
-                if(fontSelect.options[i].value.includes(primaryFont)) {
-                    fontSelect.selectedIndex = i;
-                    break;
-                }
-            }
-        }
-
-        // Sync formatting buttons (bold, italic, underline, alignment)
-        document.querySelectorAll('.fmt-btn').forEach(btn => {
-            const cmd = btn.dataset.cmd;
-            btn.classList.remove('active');
-            if (cmd === 'bold' && (computed.fontWeight === 'bold' || parseInt(computed.fontWeight) >= 700)) btn.classList.add('active');
-            if (cmd === 'italic' && computed.fontStyle === 'italic') btn.classList.add('active');
-            if (cmd === 'underline' && computed.textDecorationLine === 'underline') btn.classList.add('active');
-            
-            if (cmd === 'justifyLeft' && computed.textAlign === 'left') btn.classList.add('active');
-            if (cmd === 'justifyCenter' && computed.textAlign === 'center') btn.classList.add('active');
-            if (cmd === 'justifyRight' && computed.textAlign === 'right') btn.classList.add('active');
-            if (cmd === 'justifyFull' && computed.textAlign === 'justify') btn.classList.add('active');
-        });
-    }
-    // --- PLAIN TEXT PASTE ---
-    document.addEventListener('paste', (e) => {
-        if (e.target.closest('.visual-canvas') && e.target.isContentEditable) {
-            e.preventDefault();
-            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-            document.execCommand('insertText', false, text);
-        }
-    });
-
-    
-
-    const splitRatioSelect = document.getElementById('split-layout-ratio');
-    if (splitRatioSelect) {
-        splitRatioSelect.addEventListener('change', e => {
-            if (activeBlock && activeBlock.dataset.type === 'split') {
-                const ratio = e.target.value;
-                activeBlock.dataset.ratio = ratio;
-                const container = activeBlock.querySelector('.split-container');
-                
-                let currentCols = container.querySelectorAll('.inner-dropzone').length;
-                let targetCols = ratio === '1:1:1' ? 3 : 2;
-                
-                while(currentCols < targetCols) {
-                    const newCol = document.createElement('div');
-                    newCol.className = 'inner-dropzone';
-                    newCol.style = 'border:1px dashed #ccc; padding:16px; min-height:100px;';
-                    container.appendChild(newCol);
-                    currentCols++;
-                }
-                while(currentCols > targetCols) {
-                    if (container.lastElementChild.classList.contains('inner-dropzone')) {
-                        container.lastElementChild.remove();
-                        currentCols--;
-                    } else { break; }
-                }
-                
-                if (ratio === '1:1') container.style.gridTemplateColumns = '1fr 1fr';
-                else if (ratio === '1:2') container.style.gridTemplateColumns = '1fr 2fr';
-                else if (ratio === '2:1') container.style.gridTemplateColumns = '2fr 1fr';
-                else if (ratio === '1:1:1') container.style.gridTemplateColumns = '1fr 1fr 1fr';
-            }
-        });
-    }
-
-        // --- 5. VIDEO SETTINGS ---
-    const vidUrl = document.getElementById('vid-url');
-    const btnSetVid = document.getElementById('btn-set-vid');
-    if(btnSetVid && vidUrl) {
-        btnSetVid.addEventListener('click', () => {
-            if(!activeBlock || activeBlock.dataset.type !== 'vid') return;
-            const iframe = activeBlock.querySelector('iframe');
-            const ph = activeBlock.querySelector('.vid-ph');
-            if(iframe && vidUrl.value) {
-                iframe.src = vidUrl.value;
-                iframe.style.display = 'block';
-                if(ph) ph.style.display = 'none';
-                vidUrl.value = ''; 
-                activatePanel('meta');
-            }
-        });
-    }
-
-    // --- NEW ARTICLE BUTTON ---
-    const btnNew = document.getElementById('btn-new-article');
-    if (btnNew) {
-        btnNew.addEventListener('click', () => {
-            if (confirm('Create a new blank article? Unsaved changes in the current editor will be cleared.')) {
-                window.location.reload();
-            }
-        });
-    }
-
-    });
-
-// --- MANAGE ARTICLES SYSTEM ---
-document.addEventListener('DOMContentLoaded', () => {
-    const btnManage = document.getElementById('btn-manage-articles');
-    const modalManage = document.getElementById('manage-articles-modal');
-    const btnCloseManage = document.getElementById('manage-modal-close');
-    const manageBody = document.getElementById('manage-modal-body');
-
-    if(btnManage && modalManage) {
-        // --- Ad Settings Modal Logic ---
-        const btnAdSettings = document.getElementById('btn-open-ad-settings');
-        const modalAdSettings = document.getElementById('ad-settings-modal');
-        const btnCloseAdSettings = document.getElementById('ad-settings-modal-close');
-        
-        if (btnAdSettings && modalAdSettings) {
-            btnAdSettings.addEventListener('click', () => {
-                modalAdSettings.style.display = 'flex';
-            });
-            btnCloseAdSettings.addEventListener('click', () => {
-                modalAdSettings.style.display = 'none';
-            });
-            // Close when clicking outside the modal content
-            modalAdSettings.addEventListener('click', (e) => {
-                if (e.target === modalAdSettings) {
-                    modalAdSettings.style.display = 'none';
-                }
-            });
-            // Close when saving ads
-            const saveAdsBtnGlobal = document.getElementById('btn-save-ads');
-            if (saveAdsBtnGlobal) {
-                saveAdsBtnGlobal.addEventListener('click', () => {
-                    modalAdSettings.style.display = 'none';
-                });
-            }
-        }
-        
-        // --- Meta Data Modal Logic ---
-        const btnMetaData = document.getElementById('btn-open-meta-data');
-        const modalMetaData = document.getElementById('meta-data-modal');
-        const btnCloseMetaData = document.getElementById('meta-data-modal-close');
-        
-        if (btnMetaData && modalMetaData) {
-            btnMetaData.addEventListener('click', () => {
-                modalMetaData.style.display = 'flex';
-            });
-            btnCloseMetaData.addEventListener('click', () => {
-                modalMetaData.style.display = 'none';
-            });
-            modalMetaData.addEventListener('click', (e) => {
-                if (e.target === modalMetaData) {
-                    modalMetaData.style.display = 'none';
-                }
-            });
-            const saveMetaBtn = document.getElementById('btn-save-meta');
-            if (saveMetaBtn) {
-                saveMetaBtn.addEventListener('click', () => {
-                    modalMetaData.style.display = 'none';
-                    // We don't need to explicitly save it here, as it's saved when published.
-                });
-            }
-        }
-
-    }
-
-    window.editArticle = function(id) {
-        const art = getArticleById(id);
-        if(!art) return;
-        
-        // 1. Set editing ID
-        const canvas = document.getElementById('main-canvas');
-        if(!canvas) return;
-        canvas.dataset.editId = id;
-        
-        // 2. Restore content
-        if (art.adminHTML) {
-            canvas.innerHTML = art.adminHTML;
-            // Inject caption box if editing an old article that didn't have it
-            const existingHero = canvas.querySelector('#default-hero');
-            if (existingHero && !canvas.querySelector('#default-hero-caption')) {
-                const newCaption = document.createElement('div');
-                newCaption.className = 'hero-caption edit-text';
-                newCaption.id = 'default-hero-caption';
-                newCaption.setAttribute('contenteditable', 'true');
-                newCaption.setAttribute('placeholder', 'Image Credit / Caption (Optional)');
-                existingHero.after(newCaption);
-            }
-            
-            // Re-bind all blocks for interactivity
-            canvas.querySelectorAll('.canvas-block').forEach(block => {
-                if (typeof window.bindBlock === 'function') {
-                    window.bindBlock(block);
-                }
-            });
-        } else if (art.fullHTML) {
-            // Fallback for older articles without adminHTML
-            canvas.innerHTML = art.fullHTML;
-            // Best-effort to restore editability
-            canvas.querySelectorAll('.article-text, h1, h2, span').forEach(el => {
-                if(!el.closest('.t9-quote-mark') && !el.closest('.meta-data')) {
-                    el.setAttribute('contenteditable', 'true');
-                    el.classList.add('edit-text');
-                }
-            });
-            // Show placeholders again if empty
-            const ph = canvas.querySelector('.hero-subject-placeholder');
-            if(!ph) {
-                // Not perfect, but we try
-            }
-        } else {
-            // very old articles
-            canvas.innerHTML = art.content; 
-        }
-
-        // Inject caption box if missing in fallback cases
-        const existingHeroGlobal = canvas.querySelector('#default-hero');
-        if (existingHeroGlobal && !canvas.querySelector('#default-hero-caption')) {
-            const newCaption = document.createElement('div');
-            newCaption.className = 'hero-caption edit-text';
-            newCaption.id = 'default-hero-caption';
-            newCaption.setAttribute('contenteditable', 'true');
-            newCaption.setAttribute('placeholder', 'Image Credit / Caption (Optional)');
-            existingHeroGlobal.after(newCaption);
-        }
-
-        // Restore Status Selection
-        const statusEl = document.getElementById('article-status');
-        if (statusEl && art.status) {
-            statusEl.value = art.status;
-        } else if (statusEl) {
-            statusEl.value = 'Published';
-        }
-
-        // 3. Restore Category Selection
-        const catSelect = document.getElementById('news-cat');
-        if(catSelect) {
-            for(let i=0; i<catSelect.options.length; i++) {
-                if(catSelect.options[i].text === art.category) {
-                    catSelect.selectedIndex = i;
-                    break;
-                }
-            }
-        }
-        
-        // Restore Template selection visually (does not rebuild canvas since it's already built)
-        const tplSelect = document.getElementById('template-selector');
-        if (tplSelect && art.template) {
-            tplSelect.value = art.template;
-        }
-
-        // Close modal
-        modalManage.style.display = 'none';
-        
-        alert('Article loaded into editor! Make your changes and click "Publish Live" to update.');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-});
-
-// --- ANALYTICS DASHBOARD SYSTEM ---
-document.addEventListener('DOMContentLoaded', () => {
-    const btnAnalytics = document.getElementById('btn-analytics-dashboard');
-    const modalAnalytics = document.getElementById('analytics-dashboard-modal');
-    const btnCloseAnalytics = document.getElementById('analytics-modal-close');
-
-    if (btnAnalytics && modalAnalytics) {
-        let trafficChartInstance = null;
-
-        btnAnalytics.addEventListener('click', () => {
-            renderAnalytics();
-            modalAnalytics.style.display = 'flex';
-        });
-
-        btnCloseAnalytics.addEventListener('click', () => {
-            modalAnalytics.style.display = 'none';
-        });
-
-        modalAnalytics.addEventListener('click', (e) => {
-            if(e.target === modalAnalytics) {
-                modalAnalytics.style.display = 'none';
-            }
-        });
-
-        function renderAnalytics() {
-            const logs = JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]');
-            
-            // 1. Calculate Stats
-            const totalViews = logs.length;
-            document.getElementById('a-total-views').textContent = totalViews;
-
-            const todayStr = new Date().toISOString().split('T')[0];
-            const todayViews = logs.filter(l => l.date === todayStr).length;
-            document.getElementById('a-today-views').textContent = todayViews;
-
-            const pageCounts = {};
-            logs.forEach(l => {
-                pageCounts[l.page] = (pageCounts[l.page] || 0) + 1;
-            });
-            
-            let topPage = '-';
-            let maxCount = 0;
-            for (const [page, count] of Object.entries(pageCounts)) {
-                if (count > maxCount) {
-                    maxCount = count;
-                    topPage = page;
-                }
-            }
-            document.getElementById('a-top-page').textContent = topPage;
-
-            // 2. Populate Table (Last 10 visits)
-            const tbody = document.getElementById('a-traffic-log');
-            if (tbody) {
-                const recentLogs = [...logs].reverse().slice(0, 10);
-                if (recentLogs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">No traffic data recorded yet. Visit the live site to generate data!</td></tr>';
-                } else {
-                    tbody.innerHTML = recentLogs.map(l => `
-                        <tr>
-                            <td>${l.date}</td>
-                            <td>${l.time}</td>
-                            <td style="font-weight:600; color:#3b82f6;">${l.page}</td>
-                            <td style="font-size:0.8rem; color:#64748b;">${l.path}</td>
-                        </tr>
-                    `).join('');
-                }
-            }
-
-            // 3. Render Chart.js
-            const ctx = document.getElementById('trafficChart');
-            if (ctx) {
-                // Group data by last 7 days
-                const last7Days = [];
-                for (let i = 6; i >= 0; i--) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    last7Days.push(d.toISOString().split('T')[0]);
-                }
-
-                const chartData = last7Days.map(date => {
-                    return logs.filter(l => l.date === date).length;
-                });
-
-                if (trafficChartInstance) {
-                    trafficChartInstance.destroy();
-                }
-
-                trafficChartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: last7Days,
-                        datasets: [{
-                            label: 'Daily Page Views',
-                            data: chartData,
-                            borderColor: '#3f51b5',
-                            backgroundColor: 'rgba(63, 81, 181, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4,
-                            pointBackgroundColor: '#3f51b5',
-                            pointRadius: 4,
-                            pointHoverRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { mode: 'index', intersect: false }
-                        },
-                        scales: {
-                            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-            }
-        }
-    }
-});
-
-document.addEventListener('change', async (e) => {
-    if (e.target && e.target.classList.contains('hidden-file-input')) {
-        const file = e.target.files[0];
-        if (file) {
-            const block = e.target.closest('.canvas-block');
-            if (block) {
-                const imgEl = block.querySelector('img');
-                const ph = block.querySelector('.img-ph');
-                
-                if (imgEl) {
-                    imgEl.src = URL.createObjectURL(file);
-                    imgEl.style.display = 'block';
-                }
-                if (ph) {
-                    ph.style.display = 'none';
-                }
-                
-                try {
-                    const cdnUrl = await window.uploadToCloudinaryGlobal(file);
-                    if (imgEl) imgEl.src = cdnUrl;
-                    console.log('Block image uploaded to Cloudinary:', cdnUrl);
-                } catch (err) {
-                    console.error('Cloudinary upload error:', err);
-                    alert('Cloudinary Upload Failed: ' + err.message);
-                }
-            }
-        }
-    }
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ==========================================
-// RESTORED: PUBLISH & MANAGE ARTICLES SYSTEM
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // --- 1. PUBLISH LOGIC ---
+    // 5. PUBLISH LOGIC
     const publishBtn = document.getElementById('top-publish-btn');
     if(publishBtn) {
         publishBtn.addEventListener('click', async () => {
             try {
-                // Immediately show loading state
                 publishBtn.disabled = true;
                 publishBtn.textContent = 'Publishing...';
 
-                const defaultTitle = document.getElementById('default-title');
-                const defaultHeroImg = document.getElementById('default-hero-img');
-                const defaultContent = document.getElementById('default-content');
-                const tplSelect = document.getElementById('template-selector');
-                const dropzone = document.getElementById('dropzone');
-
                 const title = defaultTitle ? defaultTitle.textContent.trim() : '';
-                const media = (defaultHeroImg && defaultHeroImg.style.display !== 'none') ? defaultHeroImg.src : '';
-                const catSelect = document.getElementById('news-cat');
-                const category = catSelect ? catSelect.options[catSelect.selectedIndex].text : 'News';
-                const excerpt = document.getElementById('news-excerpt') ? document.getElementById('news-excerpt').value.trim() : '';
-                const chosenTemplate = tplSelect ? tplSelect.value : 'template1';
-
                 if(!title || title === 'Type your main headline here...') { 
                     alert("Please type a main headline before publishing!"); 
                     publishBtn.disabled = false;
@@ -1193,102 +180,81 @@ document.addEventListener('DOMContentLoaded', () => {
                     return; 
                 }
 
-                // Gather Content
-                let finalContent = '';
-                if(defaultContent) {
-                    let p = defaultContent.innerHTML.trim();
-                    let styles = defaultContent.getAttribute('style') || '';
-                    if(!p.includes('Start writing')) {
-                        finalContent += `<div style="${styles}" class="article-text">${p}</div>`;
-                    }
-                }
+                const catSelect = document.getElementById('news-cat');
+                const category = catSelect ? catSelect.options[catSelect.selectedIndex].text : 'News';
+                const excerpt = document.getElementById('news-excerpt') ? document.getElementById('news-excerpt').value.trim() : '';
+                const imgNode = document.getElementById('default-hero-img');
+                const media = (imgNode && imgNode.style.display !== 'none') ? imgNode.src : '';
 
+                let finalContent = '';
+                if(defaultContent) finalContent += `<div class="article-text">${defaultContent.innerHTML}</div>`;
+                
                 if(dropzone) {
                     const clone = dropzone.cloneNode(true);
-                    clone.querySelectorAll('.block-del, .img-ph, .vid-ph, .drop-hint, .hidden-file-input').forEach(el => el.remove());
                     clone.querySelectorAll('.canvas-block').forEach(el => {
                         const type = el.dataset.type;
                         if(type === 'p') {
-                            const innerTextDiv = el.querySelector('div[data-type="text"]');
-                            if(innerTextDiv) {
-                                finalContent += `<div style="${innerTextDiv.getAttribute('style') || ''}" class="article-text">${innerTextDiv.innerHTML}</div>`;
-                            }
+                            const txt = el.querySelector('div[data-type="text"]');
+                            if(txt) finalContent += `<div class="article-text">${txt.innerHTML}</div>`;
                         } else if(type === 'img') {
                             const img = el.querySelector('img');
-                            if(img && img.style.display !== 'none') {
-                                finalContent += `<figure class="article-media" style="margin:24px 0;"><img src="${img.src}" style="width:100%; border-radius:4px;"/></figure>`;
-                            }
+                            if(img && img.style.display !== 'none') finalContent += `<figure class="article-media"><img src="${img.src}" style="width:100%; border-radius:4px;"/></figure>`;
                         }
                     });
                 }
                 
-                // Clean HTML for saving
                 const canvasClone = document.getElementById('main-canvas').cloneNode(true);
-                canvasClone.querySelectorAll('.remove-ad, .move-ad-left, .move-ad-right, .block-del, .drop-hint, .hero-subject-placeholder, #default-hero-overlay, .hidden-file-input').forEach(el => el.remove());
+                canvasClone.querySelectorAll('.remove-ad, .block-del, .drop-hint, .hidden-file-input').forEach(el => el.remove());
                 canvasClone.querySelectorAll('[contenteditable]').forEach(el => {
                     el.removeAttribute('contenteditable');
-                    el.removeAttribute('placeholder');
-                    el.classList.remove('edit-text', 'edit-p', 'active');
+                    el.classList.remove('edit-text', 'active');
                 });
 
-                const fullHTML = canvasClone.outerHTML;
-                const adminHTML = document.getElementById('main-canvas').innerHTML; 
                 const isEditing = document.getElementById('main-canvas').dataset.editId;
                 const statusEl = document.getElementById('article-status');
 
                 const article = {
                     id: isEditing || 'art-' + Date.now(),
-                    template: chosenTemplate,
+                    template: document.getElementById('template-selector')?.value || 'template1',
                     title, excerpt, category, content: finalContent, media,
-                    fullHTML: fullHTML,
-                    adminHTML: adminHTML,
+                    fullHTML: canvasClone.outerHTML,
+                    adminHTML: document.getElementById('main-canvas').innerHTML,
                     status: statusEl ? statusEl.value : 'Published',
                     date: new Date().toISOString()
                 };
 
-                // Save to database
-                if (isEditing) {
-                    await updateArticle(article.id, article);
-                } else {
-                    await addArticle(article);
-                }
+                if (isEditing) await updateArticle(article.id, article);
+                else await addArticle(article);
                 
-                // Success Feedback
                 publishBtn.disabled = false;
-                publishBtn.textContent = '? Published Live';
+                publishBtn.textContent = '✓ Published Live';
 
-                if (typeof window.renderManageArticles === 'function') {
-                    await window.renderManageArticles();
-                }
+                if (typeof window.renderManageArticles === 'function') await window.renderManageArticles();
 
                 const successCard = document.getElementById('publish-success-card');
-                const statusText = document.getElementById('publish-status-text');
-                const viewLiveBtn = document.getElementById('view-live-btn');
-                
-                if(successCard && statusText) {
+                if(successCard) {
                     successCard.style.background = '#f0fdf4';
                     successCard.style.border = '1px solid #bbf7d0';
-                    statusText.innerHTML = '&#10003; Published Successfully!';
-                    statusText.style.color = '#166534';
-                    if(viewLiveBtn) {
-                        viewLiveBtn.style.display = 'block';
-                        viewLiveBtn.href = typeof getArticleLandingUrl === 'function' ? getArticleLandingUrl(article.id) : '#';
+                    document.getElementById('publish-status-text').innerHTML = '&#10003; Published Successfully!';
+                    const viewBtn = document.getElementById('view-live-btn');
+                    if(viewBtn) {
+                        viewBtn.style.display = 'block';
+                        viewBtn.href = getArticleLandingUrl(article.id);
                     }
                 }
-
                 setTimeout(() => { publishBtn.textContent = 'Publish Live'; }, 3000);
-
             } catch (err) {
-                console.error("Publish Error:", err);
+                console.error(err);
                 publishBtn.disabled = false;
                 publishBtn.textContent = 'Publish Failed';
                 alert('Publish Failed: ' + (err.message || 'Unknown Error'));
-                setTimeout(() => { publishBtn.textContent = 'Publish Live'; }, 3000);
             }
         });
     }
+});
 
-    // --- 2. MANAGE ARTICLES SYSTEM ---
+// --- MANAGE ARTICLES SYSTEM ---
+document.addEventListener('DOMContentLoaded', () => {
     const btnManage = document.getElementById('btn-manage-articles');
     const modalManage = document.getElementById('manage-articles-modal');
     const btnCloseManage = document.getElementById('manage-modal-close');
@@ -1300,22 +266,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (manageBody) manageBody.innerHTML = '<div style="text-align:center; padding: 40px;"><h3>Loading articles...</h3></div>';
             await window.renderManageArticles();
         });
-
-        btnCloseManage.addEventListener('click', () => { modalManage.style.display = 'none'; });
+        btnCloseManage.addEventListener('click', () => modalManage.style.display = 'none');
         modalManage.addEventListener('click', (e) => { if(e.target === modalManage) modalManage.style.display = 'none'; });
     }
 
     window.renderManageArticles = async function() {
         if(!manageBody) return;
         let articles = [];
-        try {
-            articles = await getArticlesAsync();
-        } catch (err) {
-            articles = typeof getArticles === 'function' ? getArticles() : [];
-        }
+        try { articles = await getArticlesAsync(); } 
+        catch (err) { articles = typeof getArticles === 'function' ? getArticles() : []; }
 
         if(!articles || articles.length === 0) {
-            manageBody.innerHTML = '<div style="text-align:center; padding: 40px; color: #64748b;"><h3>No articles published yet.</h3></div>';
+            manageBody.innerHTML = '<div style="text-align:center; padding: 40px;"><h3>No articles published yet.</h3></div>';
             return;
         }
 
@@ -1323,8 +285,8 @@ document.addEventListener('DOMContentLoaded', () => {
         articles.forEach(art => {
             if (!art) return;
             const dateStr = art.date ? new Date(art.date).toLocaleDateString() : 'Recent';
-            let imgHtml = art.media ? `<img src="${art.media}" class="m-card-img" />` : `<div class="m-card-img" style="display:flex;align-items:center;justify-content:center;font-size:3rem;">??</div>`;
-            const fullArticleUrl = typeof getArticleLandingUrl === 'function' ? getArticleLandingUrl(art.id || 'seed-1') : '#';
+            let imgHtml = art.media ? `<img src="${art.media}" class="m-card-img" />` : `<div class="m-card-img" style="display:flex;align-items:center;justify-content:center;font-size:3rem;">📰</div>`;
+            const fullArticleUrl = getArticleLandingUrl(art.id || 'seed-1');
 
             html += `
                 <div class="m-card" data-id="${art.id}">
@@ -1333,10 +295,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="m-card-body">
                         <div class="m-card-cat">${art.category || 'News'}</div>
                         <h3 class="m-card-title">${art.title || 'Untitled Article'}</h3>
-                        <div class="m-card-date">?? ${dateStr}</div>
+                        <div class="m-card-date">🕒 ${dateStr}</div>
                         <div class="m-card-actions">
-                            <a href="${fullArticleUrl}" target="_blank" class="m-btn m-btn-view">??? View</a>
-                            <button class="m-btn m-btn-delete" onclick="removeArticle('${art.id}')">??? Delete</button>
+                            <a href="${fullArticleUrl}" target="_blank" class="m-btn m-btn-view">👁️ View</a>
+                            <button class="m-btn m-btn-delete" onclick="removeArticle('${art.id}')">🗑️ Delete</button>
                         </div>
                     </div>
                 </div>
@@ -1344,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         html += '</div>';
         manageBody.innerHTML = html;
-    }
+    };
 
     window.removeArticle = async function(id) {
         if(confirm('Are you sure you want to delete this article?')) {
@@ -1354,4 +316,22 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 });
 
-
+// --- HANDLE BLOCK IMAGE UPLOADS ---
+document.addEventListener('change', async (e) => {
+    if (e.target && e.target.classList.contains('hidden-file-input')) {
+        const file = e.target.files[0];
+        if (file) {
+            const block = e.target.closest('.canvas-block');
+            if (block) {
+                const imgEl = block.querySelector('img');
+                const ph = block.querySelector('.img-ph');
+                if (imgEl) { imgEl.src = URL.createObjectURL(file); imgEl.style.display = 'block'; }
+                if (ph) ph.style.display = 'none';
+                try {
+                    const cdnUrl = await window.uploadToCloudinaryGlobal(file);
+                    if (imgEl) imgEl.src = cdnUrl;
+                } catch (err) { alert('Upload Failed: ' + err.message); }
+            }
+        }
+    }
+});
