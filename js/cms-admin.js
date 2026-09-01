@@ -1,4 +1,4 @@
-// --- GLOBAL HELPERS: URL RESOLUTION & SHORTENER ---
+﻿// --- GLOBAL HELPERS: URL RESOLUTION & SHORTENER ---
 function getArticleLandingUrl(articleId) {
     const origin = window.location.origin;
     let path = window.location.pathname;
@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 else await addArticle(article);
                 
                 publishBtn.disabled = false;
-                publishBtn.textContent = '✓ Published Live';
+                publishBtn.textContent = 'âœ“ Published Live';
 
                 if (typeof window.renderManageArticles === 'function') await window.renderManageArticles();
 
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         articles.forEach(art => {
             if (!art) return;
             const dateStr = art.date ? new Date(art.date).toLocaleDateString() : 'Recent';
-            let imgHtml = art.media ? `<img src="${art.media}" class="m-card-img" />` : `<div class="m-card-img" style="display:flex;align-items:center;justify-content:center;font-size:3rem;">📰</div>`;
+            let imgHtml = art.media ? `<img src="${art.media}" class="m-card-img" />` : `<div class="m-card-img" style="display:flex;align-items:center;justify-content:center;font-size:3rem;">ðŸ“°</div>`;
             const fullArticleUrl = getArticleLandingUrl(art.id || 'seed-1');
 
             html += `
@@ -295,9 +295,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="m-card-body">
                         <div class="m-card-cat">${art.category || 'News'}</div>
                         <h3 class="m-card-title">${art.title || 'Untitled Article'}</h3>
-                        <div class="m-card-date">🕒 ${dateStr}</div>
+                        <div class="m-card-date">ðŸ•’ ${dateStr}</div>
                         <div class="m-card-actions">
                             <a href="${fullArticleUrl}" target="_blank" class="m-btn m-btn-view">👁️ View</a>
+                            <button class="m-btn m-btn-short" onclick="copyArticleShortLink('${fullArticleUrl}', this)">🔗 Short</button>
+                            <button class="m-btn m-btn-edit" onclick="editArticle('${art.id}')">✏️ Edit</button>
                             <button class="m-btn m-btn-delete" onclick="removeArticle('${art.id}')">🗑️ Delete</button>
                         </div>
                     </div>
@@ -313,6 +315,71 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof deleteArticle === 'function') await deleteArticle(id);
             await window.renderManageArticles(); 
         }
+    };
+
+    window.copyArticleShortLink = async function(longUrl, btn) {
+        const origText = btn.textContent;
+        btn.textContent = '...';
+        btn.disabled = true;
+        try {
+            const shortUrl = await generateShortUrl(longUrl);
+            await navigator.clipboard.writeText(shortUrl);
+            btn.textContent = '✓ Copied!';
+        } catch (e) {
+            prompt('Copy your short link:', longUrl);
+            btn.textContent = '🔗 Short';
+        }
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = origText; }, 2000);
+    };
+
+    window.editArticle = function(id) {
+        let articles = [];
+        try { articles = typeof getArticles === 'function' ? getArticles() : []; } catch(e) {}
+        const art = articles.find(a => a.id === id);
+        if(!art) return;
+        
+        const canvas = document.getElementById('main-canvas');
+        if(!canvas) return;
+        
+        canvas.dataset.editId = id;
+        
+        if (art.adminHTML) {
+            canvas.innerHTML = art.adminHTML;
+            canvas.querySelectorAll('.canvas-block').forEach(block => {
+                if (typeof window.bindBlock === 'function') window.bindBlock(block);
+            });
+        } else if (art.fullHTML) {
+            canvas.innerHTML = art.fullHTML;
+            canvas.querySelectorAll('.article-text, h1, h2, span').forEach(el => {
+                if(!el.closest('.meta-data')) {
+                    el.setAttribute('contenteditable', 'true');
+                    el.classList.add('edit-text');
+                }
+            });
+        }
+
+        const statusEl = document.getElementById('article-status');
+        if (statusEl && art.status) statusEl.value = art.status;
+
+        const catSelect = document.getElementById('news-cat');
+        if(catSelect && art.category) {
+            for(let i=0; i<catSelect.options.length; i++) {
+                if(catSelect.options[i].text === art.category) {
+                    catSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+        
+        const tplSelect = document.getElementById('template-selector');
+        if (tplSelect && art.template) tplSelect.value = art.template;
+
+        const modalManage = document.getElementById('manage-articles-modal');
+        if(modalManage) modalManage.style.display = 'none';
+        
+        alert('Article loaded into editor! Make your changes and click "Publish Live" to update.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 });
 
@@ -335,3 +402,5 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
+
