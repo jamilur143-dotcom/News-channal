@@ -404,3 +404,45 @@ document.addEventListener('change', async (e) => {
 });
 
 
+
+
+// --- TOP-BAR MODAL CONTROLS (Meta Data & Ad Settings) ---
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Ad Settings Modal
+    const btnAdSettings = document.getElementById('btn-open-ad-settings');
+    const modalAdSettings = document.getElementById('ad-settings-modal');
+    const btnCloseAdSettings = document.getElementById('ad-settings-modal-close');
+    
+    if (btnAdSettings && modalAdSettings) {
+        btnAdSettings.addEventListener('click', () => modalAdSettings.style.display = 'flex');
+        btnCloseAdSettings.addEventListener('click', () => modalAdSettings.style.display = 'none');
+        modalAdSettings.addEventListener('click', (e) => {
+            if (e.target === modalAdSettings) modalAdSettings.style.display = 'none';
+        });
+        
+        // Auto-close when clicking save
+        const saveAdsBtnGlobal = document.getElementById('btn-save-ads');
+        if (saveAdsBtnGlobal) {
+            saveAdsBtnGlobal.addEventListener('click', () => modalAdSettings.style.display = 'none');
+        }
+    }
+    
+    // 2. Meta Data Modal
+    const btnMetaData = document.getElementById('btn-open-meta-data');
+    const modalMetaData = document.getElementById('meta-data-modal');
+    const btnCloseMetaData = document.getElementById('meta-data-modal-close');
+    
+    if (btnMetaData && modalMetaData) {
+        btnMetaData.addEventListener('click', () => modalMetaData.style.display = 'flex');
+        btnCloseMetaData.addEventListener('click', () => modalMetaData.style.display = 'none');
+        modalMetaData.addEventListener('click', (e) => {
+            if (e.target === modalMetaData) modalMetaData.style.display = 'none';
+        });
+        
+        // Auto-close when clicking save
+        const saveMetaBtn = document.getElementById('btn-save-meta');
+        if (saveMetaBtn) {
+            saveMetaBtn.addEventListener('click', () => modalMetaData.style.display = 'none');
+        }
+    }
+});
