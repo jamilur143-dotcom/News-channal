@@ -1,4 +1,4 @@
-// GitHub update trigger
+﻿// GitHub update trigger
 const DB_KEY = 'nexus_cms_articles';
 
 // Firebase Configuration
@@ -32,7 +32,7 @@ const seedData = [
     title: 'Global Climate Emergency Summit Reaches Historic Agreement',
     category: 'World',
     excerpt: 'World leaders from 195 nations have unanimously adopted the most ambitious climate framework in history...',
-    content: '<p>In a landmark moment for global diplomacy, representatives from all 195 member states of the United Nations signed the Geneva Climate Accord 2026 on Tuesday morning, marking the culmination of 14 months of intense negotiations.</p><p>The agreement sets binding targets for signatory nations with graduated timelines based on economic development status. Developed nations must achieve net-zero carbon emissions by 2038.</p><p>The $4 trillion fund — described by economists as the largest coordinated financial commitment in history — will be disbursed over 15 years, prioritizing renewable energy infrastructure.</p>',
+    content: '<p>In a landmark moment for global diplomacy, representatives from all 195 member states of the United Nations signed the Geneva Climate Accord 2026 on Tuesday morning, marking the culmination of 14 months of intense negotiations.</p><p>The agreement sets binding targets for signatory nations with graduated timelines based on economic development status. Developed nations must achieve net-zero carbon emissions by 2038.</p><p>The $4 trillion fund â€” described by economists as the largest coordinated financial commitment in history â€” will be disbursed over 15 years, prioritizing renewable energy infrastructure.</p>',
     media: '',
     date: new Date(Date.now() - 3600000).toISOString()
   },
@@ -210,8 +210,15 @@ async function deleteArticle(id) {
 
 // Global Cloud Ad Settings (Synced across all users and browsers)
 async function getAdSettingsAsync() {
-  const localBanner = localStorage.getItem('adBannerCode') || '';
-  const localPopunder = localStorage.getItem('adPopunderCode') || '';
+  const defaults = {
+    adSocial: localStorage.getItem('ad_social') || '',
+    adPopunder: localStorage.getItem('ad_popunder') || '',
+    ad728: localStorage.getItem('ad_728') || '',
+    ad160: localStorage.getItem('ad_160') || '',
+    ad300: localStorage.getItem('ad_300') || '',
+    adNative: localStorage.getItem('ad_native') || '',
+    adSmartlink: localStorage.getItem('ad_smartlink') || ''
+  };
 
   const firestore = getFirestoreDb();
   if (firestore) {
@@ -219,30 +226,50 @@ async function getAdSettingsAsync() {
       const doc = await firestore.collection('nexus_settings').doc('ad_config').get();
       if (doc.exists) {
         const data = doc.data();
-        if (data.bannerCode !== undefined) localStorage.setItem('adBannerCode', data.bannerCode);
-        if (data.popunderCode !== undefined) localStorage.setItem('adPopunderCode', data.popunderCode);
+        if (data.adSocial !== undefined) localStorage.setItem('ad_social', data.adSocial);
+        if (data.adPopunder !== undefined) localStorage.setItem('ad_popunder', data.adPopunder);
+        if (data.ad728 !== undefined) localStorage.setItem('ad_728', data.ad728);
+        if (data.ad160 !== undefined) localStorage.setItem('ad_160', data.ad160);
+        if (data.ad300 !== undefined) localStorage.setItem('ad_300', data.ad300);
+        if (data.adNative !== undefined) localStorage.setItem('ad_native', data.adNative);
+        if (data.adSmartlink !== undefined) localStorage.setItem('ad_smartlink', data.adSmartlink);
         return {
-          bannerCode: data.bannerCode || '',
-          popunderCode: data.popunderCode || ''
+          adSocial: data.adSocial || '',
+          adPopunder: data.adPopunder || '',
+          ad728: data.ad728 || '',
+          ad160: data.ad160 || '',
+          ad300: data.ad300 || '',
+          adNative: data.adNative || '',
+          adSmartlink: data.adSmartlink || ''
         };
       }
     } catch (e) {
       console.warn("Firestore ad settings fetch error:", e);
     }
   }
-  return { bannerCode: localBanner, popunderCode: localPopunder };
+  return defaults;
 }
 
-async function saveAdSettingsAsync(bannerCode, popunderCode) {
-  localStorage.setItem('adBannerCode', bannerCode);
-  localStorage.setItem('adPopunderCode', popunderCode);
+async function saveAdSettingsAsync(config) {
+  if (config.adSocial !== undefined) localStorage.setItem('ad_social', config.adSocial);
+  if (config.adPopunder !== undefined) localStorage.setItem('ad_popunder', config.adPopunder);
+  if (config.ad728 !== undefined) localStorage.setItem('ad_728', config.ad728);
+  if (config.ad160 !== undefined) localStorage.setItem('ad_160', config.ad160);
+  if (config.ad300 !== undefined) localStorage.setItem('ad_300', config.ad300);
+  if (config.adNative !== undefined) localStorage.setItem('ad_native', config.adNative);
+  if (config.adSmartlink !== undefined) localStorage.setItem('ad_smartlink', config.adSmartlink);
 
   const firestore = getFirestoreDb();
   if (firestore) {
     try {
       await firestore.collection('nexus_settings').doc('ad_config').set({
-        bannerCode: bannerCode || '',
-        popunderCode: popunderCode || '',
+        adSocial: config.adSocial || '',
+        adPopunder: config.adPopunder || '',
+        ad728: config.ad728 || '',
+        ad160: config.ad160 || '',
+        ad300: config.ad300 || '',
+        adNative: config.adNative || '',
+        adSmartlink: config.adSmartlink || '',
         updatedAt: new Date().toISOString()
       });
       console.log("Ad settings saved to Firestore cloud successfully.");
@@ -254,5 +281,6 @@ async function saveAdSettingsAsync(bannerCode, popunderCode) {
   }
   return false;
 }
+
 
 

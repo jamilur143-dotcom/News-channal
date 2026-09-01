@@ -414,16 +414,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCloseAdSettings = document.getElementById('ad-settings-modal-close');
     
     if (btnAdSettings && modalAdSettings) {
-        btnAdSettings.addEventListener('click', () => modalAdSettings.style.display = 'flex');
+        btnAdSettings.addEventListener('click', async () => {
+            modalAdSettings.style.display = 'flex';
+            // Auto-load settings
+            if (typeof getAdSettingsAsync === 'function') {
+                const ads = await getAdSettingsAsync();
+                if(document.getElementById('ad-social')) document.getElementById('ad-social').value = ads.adSocial || '';
+                if(document.getElementById('ad-popunder')) document.getElementById('ad-popunder').value = ads.adPopunder || '';
+                if(document.getElementById('ad-728')) document.getElementById('ad-728').value = ads.ad728 || '';
+                if(document.getElementById('ad-160')) document.getElementById('ad-160').value = ads.ad160 || '';
+                if(document.getElementById('ad-300')) document.getElementById('ad-300').value = ads.ad300 || '';
+                if(document.getElementById('ad-native')) document.getElementById('ad-native').value = ads.adNative || '';
+                if(document.getElementById('ad-smartlink')) document.getElementById('ad-smartlink').value = ads.adSmartlink || '';
+            }
+        });
+        
         btnCloseAdSettings.addEventListener('click', () => modalAdSettings.style.display = 'none');
         modalAdSettings.addEventListener('click', (e) => {
             if (e.target === modalAdSettings) modalAdSettings.style.display = 'none';
         });
         
-        // Auto-close when clicking save
+        // Save logic
         const saveAdsBtnGlobal = document.getElementById('btn-save-ads');
         if (saveAdsBtnGlobal) {
-            saveAdsBtnGlobal.addEventListener('click', () => modalAdSettings.style.display = 'none');
+            saveAdsBtnGlobal.addEventListener('click', async () => {
+                if (typeof saveAdSettingsAsync !== 'function') {
+                    modalAdSettings.style.display = 'none';
+                    return;
+                }
+                
+                const config = {
+                    adSocial: document.getElementById('ad-social') ? document.getElementById('ad-social').value : '',
+                    adPopunder: document.getElementById('ad-popunder') ? document.getElementById('ad-popunder').value : '',
+                    ad728: document.getElementById('ad-728') ? document.getElementById('ad-728').value : '',
+                    ad160: document.getElementById('ad-160') ? document.getElementById('ad-160').value : '',
+                    ad300: document.getElementById('ad-300') ? document.getElementById('ad-300').value : '',
+                    adNative: document.getElementById('ad-native') ? document.getElementById('ad-native').value : '',
+                    adSmartlink: document.getElementById('ad-smartlink') ? document.getElementById('ad-smartlink').value : ''
+                };
+                
+                const origText = saveAdsBtnGlobal.textContent;
+                saveAdsBtnGlobal.textContent = 'Saving...';
+                saveAdsBtnGlobal.disabled = true;
+                
+                try {
+                    await saveAdSettingsAsync(config);
+                    saveAdsBtnGlobal.textContent = 'Saved!';
+                    setTimeout(() => {
+                        modalAdSettings.style.display = 'none';
+                        saveAdsBtnGlobal.textContent = origText;
+                        saveAdsBtnGlobal.disabled = false;
+                    }, 600);
+                } catch (e) {
+                    alert('Error saving ads: ' + e.message);
+                    saveAdsBtnGlobal.textContent = origText;
+                    saveAdsBtnGlobal.disabled = false;
+                }
+            });
         }
     }
     
@@ -580,3 +627,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
