@@ -446,3 +446,137 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+
+// --- SIDEBAR CONTROLS (Create New & Analytics Dashboard) ---
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // 1. Create New Article Logic
+    const btnNew = document.getElementById('btn-new-article');
+    if (btnNew) {
+        btnNew.addEventListener('click', () => {
+            if (confirm('Create a new blank article? Unsaved changes in the current editor will be cleared.')) {
+                // Reload without query parameters to ensure a blank slate
+                window.location.href = window.location.pathname;
+            }
+        });
+    }
+
+    // 2. Analytics Dashboard Logic
+    const btnAnalytics = document.getElementById('btn-analytics-dashboard');
+    const modalAnalytics = document.getElementById('analytics-dashboard-modal');
+    const btnCloseAnalytics = document.getElementById('analytics-modal-close');
+    let trafficChartInstance = null;
+
+    if (btnAnalytics && modalAnalytics) {
+        btnAnalytics.addEventListener('click', () => {
+            renderAnalytics();
+            modalAnalytics.style.display = 'flex';
+        });
+
+        btnCloseAnalytics.addEventListener('click', () => {
+            modalAnalytics.style.display = 'none';
+        });
+
+        modalAnalytics.addEventListener('click', (e) => {
+            if(e.target === modalAnalytics) {
+                modalAnalytics.style.display = 'none';
+            }
+        });
+
+        function renderAnalytics() {
+            const logs = JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]');
+            
+            // Calculate Stats
+            const totalViews = logs.length;
+            const totalViewsEl = document.getElementById('a-total-views');
+            if(totalViewsEl) totalViewsEl.textContent = totalViews;
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayViews = logs.filter(l => l.date === todayStr).length;
+            const todayViewsEl = document.getElementById('a-today-views');
+            if(todayViewsEl) todayViewsEl.textContent = todayViews;
+
+            const pageCounts = {};
+            logs.forEach(l => {
+                pageCounts[l.page] = (pageCounts[l.page] || 0) + 1;
+            });
+            
+            let topPage = '-';
+            let maxCount = 0;
+            for (const [page, count] of Object.entries(pageCounts)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    topPage = page;
+                }
+            }
+            const topPageEl = document.getElementById('a-top-page');
+            if(topPageEl) topPageEl.textContent = topPage;
+
+            // Populate Table
+            const tbody = document.getElementById('a-traffic-log');
+            if (tbody) {
+                const recentLogs = [...logs].reverse().slice(0, 10);
+                if (recentLogs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">No traffic data recorded yet.</td></tr>';
+                } else {
+                    tbody.innerHTML = recentLogs.map(l => `
+                        <tr>
+                            <td>${l.date}</td>
+                            <td>${l.time}</td>
+                            <td style="font-weight:600; color:#3f51b5;">${l.page}</td>
+                            <td style="font-size:0.8rem; color:#64748b;">${l.path}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            // Render Chart.js
+            const ctx = document.getElementById('trafficChart');
+            if (ctx && typeof Chart !== 'undefined') {
+                const last7Days = [];
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    last7Days.push(d.toISOString().split('T')[0]);
+                }
+
+                const chartData = last7Days.map(date => {
+                    return logs.filter(l => l.date === date).length;
+                });
+
+                if (trafficChartInstance) {
+                    trafficChartInstance.destroy();
+                }
+
+                trafficChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: last7Days,
+                        datasets: [{
+                            label: 'Daily Page Views',
+                            data: chartData,
+                            borderColor: '#3f51b5',
+                            backgroundColor: 'rgba(63, 81, 181, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#3f51b5',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        }
+    }
+});
