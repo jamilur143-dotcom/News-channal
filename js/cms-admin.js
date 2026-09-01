@@ -826,203 +826,232 @@ document.addEventListener('DOMContentLoaded', async () => {
     const publishBtn = document.getElementById('top-publish-btn');
     if(publishBtn) {
         publishBtn.addEventListener('click', async () => {
-            const title = defaultTitle ? defaultTitle.textContent.trim() : '';
-            const media = (defaultHeroImg && defaultHeroImg.style.display !== 'none') ? defaultHeroImg.src : '';
-            const catSelect = document.getElementById('news-cat');
-            const category = catSelect ? catSelect.options[catSelect.selectedIndex].text : 'News';
-            const excerpt = document.getElementById('news-excerpt') ? document.getElementById('news-excerpt').value.trim() : '';
-            const chosenTemplate = tplSelect ? tplSelect.value : 'template1';
+            try {
+                // 1. Immediately show loading state
+                publishBtn.disabled = true;
+                publishBtn.textContent = 'Publishing...';
 
-            if(!title) { alert("Please type a main headline before publishing!"); return; }
+                // Data gathering
+                const defaultTitle = document.getElementById('default-title');
+                const defaultHeroImg = document.getElementById('default-hero-img');
+                const defaultContent = document.getElementById('default-content');
+                const tplSelect = document.getElementById('template-selector');
+                const dropzone = document.getElementById('dropzone');
 
-            const ads = {
-                top: document.getElementById('ad-top') && document.getElementById('ad-top').style.display !== 'none',
-                sidebar: document.getElementById('ad-sidebar') && document.getElementById('ad-sidebar').style.display !== 'none',
-                bottom: document.getElementById('ad-bottom') && document.getElementById('ad-bottom').style.display !== 'none'
-            };
+                const title = defaultTitle ? defaultTitle.textContent.trim() : '';
+                const media = (defaultHeroImg && defaultHeroImg.style.display !== 'none') ? defaultHeroImg.src : '';
+                const catSelect = document.getElementById('news-cat');
+                const category = catSelect ? catSelect.options[catSelect.selectedIndex].text : 'News';
+                const excerpt = document.getElementById('news-excerpt') ? document.getElementById('news-excerpt').value.trim() : '';
+                const chosenTemplate = tplSelect ? tplSelect.value : 'template1';
 
-            let finalContent = '';
-            
-            if(defaultContent) {
-                let p = defaultContent.innerHTML.trim();
-                let styles = defaultContent.getAttribute('style') || '';
-                if(!p.includes('Start writing')) {
-                    finalContent += `<div style="${styles}" class="article-text">${p}</div>`;
+                if(!title) { 
+                    alert("Please type a main headline before publishing!"); 
+                    publishBtn.disabled = false;
+                    publishBtn.textContent = 'Publish Live';
+                    return; 
                 }
-            }
 
-            if(dropzone) {
-                const clone = dropzone.cloneNode(true);
-                clone.querySelectorAll('.block-del, .img-ph, .vid-ph, .drop-hint, .hidden-file-input').forEach(el => el.remove());
-                clone.querySelectorAll('[contenteditable]').forEach(el => {
+                const ads = {
+                    top: document.getElementById('ad-top') && document.getElementById('ad-top').style.display !== 'none',
+                    sidebar: document.getElementById('ad-sidebar') && document.getElementById('ad-sidebar').style.display !== 'none',
+                    bottom: document.getElementById('ad-bottom') && document.getElementById('ad-bottom').style.display !== 'none'
+                };
+
+                let finalContent = '';
+                
+                if(defaultContent) {
+                    let p = defaultContent.innerHTML.trim();
+                    let styles = defaultContent.getAttribute('style') || '';
+                    if(!p.includes('Start writing')) {
+                        finalContent += `<div style="${styles}" class="article-text">${p}</div>`;
+                    }
+                }
+
+                if(dropzone) {
+                    const clone = dropzone.cloneNode(true);
+                    clone.querySelectorAll('.block-del, .img-ph, .vid-ph, .drop-hint, .hidden-file-input').forEach(el => el.remove());
+                    clone.querySelectorAll('[contenteditable]').forEach(el => {
+                        el.removeAttribute('contenteditable');
+                        el.removeAttribute('placeholder');
+                        el.classList.remove('edit-text', 'edit-p', 'active');
+                    });
+                    
+                    clone.querySelectorAll('.canvas-block').forEach(el => {
+                        const type = el.dataset.type;
+                        
+                        if(type === 'p') {
+                            const innerTextDiv = el.querySelector('div[data-type="text"]');
+                            if(innerTextDiv) {
+                                let styles = innerTextDiv.getAttribute('style') || '';
+                                finalContent += `<div style="${styles}" class="article-text">${innerTextDiv.innerHTML}</div>`;
+                            }
+                        } else if(type === 'img') {
+                            const img = el.querySelector('img');
+                            if(img && img.style.display !== 'none') {
+                                img.removeAttribute('style');
+                                finalContent += `<figure class="article-media" style="margin:24px 0;"><img src="${img.src}" style="width:100%; border-radius:4px;"/></figure>`;
+                            }
+                        } else if(type === 'vid') {
+                            const iframe = el.querySelector('iframe');
+                            if(iframe && iframe.style.display !== 'none') {
+                                iframe.removeAttribute('style');
+                                finalContent += `<figure class="article-media" style="margin:24px 0;"><iframe src="${iframe.src}" style="width:100%; aspect-ratio:16/9; border:none; border-radius:4px;" allowfullscreen></iframe></figure>`;
+                            }
+                        } else if(type === 'ad') {
+                            const ad = el.querySelector('.ad-inline');
+                            if(ad) finalContent += ad.outerHTML;
+                        }
+                    });
+                }
+                
+                // Canvas Clone preparation & Element Preservation
+                const canvasClone = document.getElementById('main-canvas').cloneNode(true);
+                canvasClone.querySelectorAll('.remove-ad, .move-ad-left, .move-ad-right, .block-del, .drop-hint, .hero-subject-placeholder, #default-hero-overlay, .hidden-file-input, .t9-bg-upload-btn').forEach(el => el.remove());
+
+                const clonedCaption = canvasClone.querySelector('#default-hero-caption');
+                if (clonedCaption && clonedCaption.textContent.trim() === '') {
+                    clonedCaption.remove();
+                }
+
+                const adminSidebar = document.getElementById('ad-sidebar');
+                const clonedSidebar = canvasClone.querySelector('#ad-sidebar, .ad-vertical');
+                if (adminSidebar && adminSidebar.style.display !== 'none' && clonedSidebar) {
+                    clonedSidebar.style.display = 'flex';
+                    const sidebarParent = clonedSidebar.closest('.article-sidebar');
+                    if (sidebarParent) {
+                        sidebarParent.classList.add('active');
+                        sidebarParent.style.display = 'block';
+                    }
+                } else if (clonedSidebar) {
+                    const sidebarParent = clonedSidebar.closest('.article-sidebar');
+                    if (sidebarParent) sidebarParent.classList.remove('active');
+                }
+
+                // 1. Process all dropped canvas blocks FIRST to extract their content
+                canvasClone.querySelectorAll('.canvas-block').forEach(el => {
+                    const type = el.dataset.type;
+                    if (type === 'p') {
+                        const inner = el.querySelector('[data-type="text"], .edit-p, .edit-text, div');
+                        if (inner && inner.textContent.trim() !== '') {
+                            const p = document.createElement('div');
+                            p.className = 'article-text';
+                            const existingStyle = inner.getAttribute('style') || '';
+                            p.style.cssText = existingStyle ? existingStyle : 'font-size: 1.15rem; margin-bottom: 28px; line-height: 1.8;';
+                            p.innerHTML = inner.innerHTML;
+                            el.replaceWith(p);
+                        } else {
+                            el.remove();
+                        }
+                    } else if (type === 'img') {
+                        const img = el.querySelector('img');
+                        if (img && img.src && img.style.display !== 'none' && !img.src.endsWith('/') && !img.src.endsWith('.html')) {
+                            const fig = document.createElement('figure');
+                            fig.className = 'article-media';
+                            fig.style.cssText = 'margin: 28px 0;';
+                            fig.innerHTML = `<img src="${img.src}" style="width:100%; border-radius:6px; display:block;" />`;
+                            el.replaceWith(fig);
+                        } else {
+                            el.remove();
+                        }
+                    } else if (type === 'split') {
+                        const container = el.querySelector('.split-container');
+                        if (container) {
+                            el.replaceWith(container);
+                        } else {
+                            el.remove();
+                        }
+                    } else if (type === 'vid') {
+                        const iframe = el.querySelector('iframe');
+                        if (iframe && iframe.src && iframe.style.display !== 'none') {
+                            const fig = document.createElement('figure');
+                            fig.className = 'article-media';
+                            fig.style.cssText = 'margin: 28px 0;';
+                            fig.innerHTML = `<iframe src="${iframe.src}" style="width:100%; aspect-ratio:16/9; border:none; border-radius:6px;" allowfullscreen></iframe>`;
+                            el.replaceWith(fig);
+                        } else {
+                            el.remove();
+                        }
+                    } else if (type === 'ad' || type === 'ad-sq' || type === 'ad-h') {
+                        const ad = el.querySelector('.ad-inline, .ad-square, .ad-horizontal');
+                        if (ad) {
+                            el.replaceWith(ad);
+                        } else {
+                            el.remove();
+                        }
+                    } else {
+                        el.classList.remove('canvas-block', 'active');
+                    }
+                });
+
+                // 2. Clean up inner dropzone containers and editable markers
+                canvasClone.querySelectorAll('.inner-dropzone').forEach(el => { 
+                    el.style.border = 'none'; 
+                    el.style.minHeight = '0'; 
+                    el.classList.remove('inner-dropzone'); 
+                });
+
+                canvasClone.querySelectorAll('[contenteditable]').forEach(el => {
                     el.removeAttribute('contenteditable');
                     el.removeAttribute('placeholder');
                     el.classList.remove('edit-text', 'edit-p', 'active');
                 });
+
+                const fullHTML = canvasClone.outerHTML;
+                const adminHTML = document.getElementById('main-canvas').innerHTML; // Save exact builder state
                 
-                clone.querySelectorAll('.canvas-block').forEach(el => {
-                    const type = el.dataset.type;
-                    
-                    if(type === 'p') {
-                        const innerTextDiv = el.querySelector('div[data-type="text"]');
-                        if(innerTextDiv) {
-                            let styles = innerTextDiv.getAttribute('style') || '';
-                            finalContent += `<div style="${styles}" class="article-text">${innerTextDiv.innerHTML}</div>`;
-                        }
-                    } else if(type === 'img') {
-                        const img = el.querySelector('img');
-                        if(img && img.style.display !== 'none') {
-                            img.removeAttribute('style');
-                            finalContent += `<figure class="article-media" style="margin:24px 0;"><img src="${img.src}" style="width:100%; border-radius:4px;"/></figure>`;
-                        }
-                    } else if(type === 'vid') {
-                        const iframe = el.querySelector('iframe');
-                        if(iframe && iframe.style.display !== 'none') {
-                            iframe.removeAttribute('style');
-                            finalContent += `<figure class="article-media" style="margin:24px 0;"><iframe src="${iframe.src}" style="width:100%; aspect-ratio:16/9; border:none; border-radius:4px;" allowfullscreen></iframe></figure>`;
-                        }
-                    } else if(type === 'ad') {
-                        const ad = el.querySelector('.ad-inline');
-                        if(ad) finalContent += ad.outerHTML;
-                    }
-                });
-            }
-            // Canvas Clone preparation & Element Preservation
-            const canvasClone = document.getElementById('main-canvas').cloneNode(true);
-            canvasClone.querySelectorAll('.remove-ad, .move-ad-left, .move-ad-right, .block-del, .drop-hint, .hero-subject-placeholder, #default-hero-overlay, .hidden-file-input, .t9-bg-upload-btn').forEach(el => el.remove());
+                const isEditing = document.getElementById('main-canvas').dataset.editId;
 
-            const clonedCaption = canvasClone.querySelector('#default-hero-caption');
-            if (clonedCaption && clonedCaption.textContent.trim() === '') {
-                clonedCaption.remove();
-            }
+                const statusEl = document.getElementById('article-status');
+                const status = statusEl ? statusEl.value : 'Published';
 
-            const adminSidebar = document.getElementById('ad-sidebar');
-            const clonedSidebar = canvasClone.querySelector('#ad-sidebar, .ad-vertical');
-            if (adminSidebar && adminSidebar.style.display !== 'none' && clonedSidebar) {
-                clonedSidebar.style.display = 'flex';
-                const sidebarParent = clonedSidebar.closest('.article-sidebar');
-                if (sidebarParent) {
-                    sidebarParent.classList.add('active');
-                    sidebarParent.style.display = 'block';
-                }
-            } else if (clonedSidebar) {
-                const sidebarParent = clonedSidebar.closest('.article-sidebar');
-                if (sidebarParent) sidebarParent.classList.remove('active');
-            }
+                const article = {
+                    id: isEditing || 'art-' + Date.now(),
+                    template: chosenTemplate,
+                    ads: ads, 
+                    title, excerpt, category, content: finalContent, media,
+                    fullHTML: fullHTML,
+                    adminHTML: adminHTML,
+                    status: status,
+                    date: new Date().toISOString()
+                };
 
-            // 1. Process all dropped canvas blocks FIRST to extract their content
-            canvasClone.querySelectorAll('.canvas-block').forEach(el => {
-                const type = el.dataset.type;
-                if (type === 'p') {
-                    const inner = el.querySelector('[data-type="text"], .edit-p, .edit-text, div');
-                    if (inner && inner.textContent.trim() !== '') {
-                        const p = document.createElement('div');
-                        p.className = 'article-text';
-                        const existingStyle = inner.getAttribute('style') || '';
-                        p.style.cssText = existingStyle ? existingStyle : 'font-size: 1.15rem; margin-bottom: 28px; line-height: 1.8;';
-                        p.innerHTML = inner.innerHTML;
-                        el.replaceWith(p);
+                // Save to database
+                try {
+                    if (isEditing) {
+                        await updateArticle(article.id, article);
                     } else {
-                        el.remove();
+                        await addArticle(article);
                     }
-                } else if (type === 'img') {
-                    const img = el.querySelector('img');
-                    if (img && img.src && img.style.display !== 'none' && !img.src.endsWith('/') && !img.src.endsWith('.html')) {
-                        const fig = document.createElement('figure');
-                        fig.className = 'article-media';
-                        fig.style.cssText = 'margin: 28px 0;';
-                        fig.innerHTML = `<img src="${img.src}" style="width:100%; border-radius:6px; display:block;" />`;
-                        el.replaceWith(fig);
+                } catch (dbErr) {
+                    if (dbErr.message && dbErr.message.includes('Firestore could not be initialized')) {
+                        console.warn('Saved to local storage, but Cloud sync failed:', dbErr);
                     } else {
-                        el.remove();
+                        throw dbErr; // Let the outer catch handle real failures
                     }
-                } else if (type === 'split') {
-                    const container = el.querySelector('.split-container');
-                    if (container) {
-                        el.replaceWith(container);
-                    } else {
-                        el.remove();
-                    }
-                } else if (type === 'vid') {
-                    const iframe = el.querySelector('iframe');
-                    if (iframe && iframe.src && iframe.style.display !== 'none') {
-                        const fig = document.createElement('figure');
-                        fig.className = 'article-media';
-                        fig.style.cssText = 'margin: 28px 0;';
-                        fig.innerHTML = `<iframe src="${iframe.src}" style="width:100%; aspect-ratio:16/9; border:none; border-radius:6px;" allowfullscreen></iframe>`;
-                        el.replaceWith(fig);
-                    } else {
-                        el.remove();
-                    }
-                } else if (type === 'ad' || type === 'ad-sq' || type === 'ad-h') {
-                    const ad = el.querySelector('.ad-inline, .ad-square, .ad-horizontal');
-                    if (ad) {
-                        el.replaceWith(ad);
-                    } else {
-                        el.remove();
-                    }
-                } else {
-                    el.classList.remove('canvas-block', 'active');
-                }
-            });
-
-            // 2. Clean up inner dropzone containers and editable markers
-            canvasClone.querySelectorAll('.inner-dropzone').forEach(el => { 
-                el.style.border = 'none'; 
-                el.style.minHeight = '0'; 
-                el.classList.remove('inner-dropzone'); 
-            });
-
-            canvasClone.querySelectorAll('[contenteditable]').forEach(el => {
-                el.removeAttribute('contenteditable');
-                el.removeAttribute('placeholder');
-                el.classList.remove('edit-text', 'edit-p', 'active');
-            });
-
-            const fullHTML = canvasClone.outerHTML;
-            const adminHTML = document.getElementById('main-canvas').innerHTML; // Save exact builder state
-            
-            const isEditing = document.getElementById('main-canvas').dataset.editId;
-
-            const statusEl = document.getElementById('article-status');
-            const status = statusEl ? statusEl.value : 'Published';
-
-            const article = {
-                id: isEditing || 'art-' + Date.now(),
-                template: chosenTemplate,
-                ads: ads, 
-                title, excerpt, category, content: finalContent, media,
-                fullHTML: fullHTML,
-                adminHTML: adminHTML,
-                status: status,
-                date: new Date().toISOString()
-            };
-
-            publishBtn.disabled = true;
-            publishBtn.textContent = 'Publishing to Cloud...';
-
-            try {
-                if (isEditing) {
-                    await updateArticle(article.id, article);
-                } else {
-                    await addArticle(article);
                 }
                 
+                // 3. Success Feedback
                 publishBtn.disabled = false;
-                publishBtn.textContent = 'Published!';
+                publishBtn.textContent = '? Published Live';
+
+                // Manage articles sync
+                if (typeof window.renderManageArticles === 'function') {
+                    await window.renderManageArticles();
+                }
 
                 const successCard = document.getElementById('publish-success-card');
                 const viewLiveBtn = document.getElementById('view-live-btn');
                 const statusText = document.getElementById('publish-status-text');
                 const copyShortBtn = document.getElementById('copy-short-btn');
                 
-                const fullArticleUrl = getArticleLandingUrl(article.id);
+                const fullArticleUrl = typeof getArticleLandingUrl === 'function' ? getArticleLandingUrl(article.id) : '';
 
                 if(successCard && viewLiveBtn && statusText) {
                     successCard.style.background = '#f0fdf4';
                     successCard.style.border = '1px solid #bbf7d0';
                     successCard.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05)';
-                    statusText.innerHTML = '&#10003; Published Successfully to Cloud!';
+                    statusText.innerHTML = '&#10003; Published Successfully!';
                     statusText.style.color = '#166534';
                     statusText.style.fontWeight = '600';
                     statusText.style.marginBottom = '12px';
@@ -1032,31 +1061,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     if (copyShortBtn) {
                         copyShortBtn.style.display = 'block';
-                        copyShortBtn.textContent = '🔗 Copy Short Link';
+                        copyShortBtn.textContent = '?? Copy Short Link';
                         copyShortBtn.onclick = async () => {
                             copyShortBtn.textContent = 'Generating...';
-                            const shortUrl = await generateShortUrl(fullArticleUrl);
-                            try {
-                                await navigator.clipboard.writeText(shortUrl);
-                                copyShortBtn.textContent = '✓ Short Link Copied!';
-                            } catch (e) {
-                                prompt('Copy your short link:', shortUrl);
-                                copyShortBtn.textContent = '🔗 Copy Short Link';
+                            if (typeof generateShortUrl === 'function') {
+                                const shortUrl = await generateShortUrl(fullArticleUrl);
+                                try {
+                                    await navigator.clipboard.writeText(shortUrl);
+                                    copyShortBtn.textContent = '? Short Link Copied!';
+                                } catch (e) {
+                                    prompt('Copy your short link:', shortUrl);
+                                    copyShortBtn.textContent = '?? Copy Short Link';
+                                }
                             }
-                            setTimeout(() => { copyShortBtn.textContent = '🔗 Copy Short Link'; }, 2500);
+                            setTimeout(() => { copyShortBtn.textContent = '?? Copy Short Link'; }, 2500);
                         };
                     }
                 }
+
+                setTimeout(() => {
+                    if(publishBtn.textContent === '? Published Live') {
+                        publishBtn.textContent = 'Publish Live';
+                    }
+                }, 3000);
+
             } catch (err) {
                 console.error("Publish Error:", err);
                 publishBtn.disabled = false;
                 publishBtn.textContent = 'Publish Failed';
-                alert('Cloud Publish Failed: ' + (err.message || 'Unknown Firestore Error'));
+                alert('Publish Failed: ' + (err.message || 'Unknown Error'));
+                setTimeout(() => {
+                    publishBtn.textContent = 'Publish Live';
+                }, 3000);
             }
-
-            setTimeout(() => {
-                publishBtn.textContent = 'Publish Live';
-            }, 2000);
         });
     }
 });
@@ -1125,7 +1162,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnManage.addEventListener('click', async () => {
             modalManage.style.display = 'flex';
             if (manageBody) manageBody.innerHTML = '<div style="text-align:center; padding: 40px; color: #64748b;"><h3>Loading articles from Cloud...</h3></div>';
-            await renderManageArticles();
+            await window.renderManageArticles();
         });
 
         btnCloseManage.addEventListener('click', () => {
@@ -1140,7 +1177,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function renderManageArticles() {
+    window.renderManageArticles = async function() {
         if(!manageBody) return;
         let articles = [];
         try {
@@ -1209,7 +1246,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.removeArticle = async function(id) {
         if(confirm('Are you sure you want to permanently delete this article? This action cannot be undone.')) {
             await deleteArticle(id);
-            await renderManageArticles(); // Refresh list
+            await window.renderManageArticles(); // Refresh list
         }
     };
 
@@ -1457,6 +1494,10 @@ document.addEventListener('change', async (e) => {
         }
     }
 });
+
+
+
+
 
 
 
