@@ -230,27 +230,162 @@
 
     /* 
        ==========================================
-       TEMPLATE 3: Editorial (Meta First, Wide Image)
+       TEMPLATE 3: Editorial (Text First, Full Bleed Image)
        ==========================================
     */
-    .visual-canvas.template-3 .article-layout-wrapper { padding-top: 50px; }
-    .visual-canvas.template-3 .meta-data { 
-        justify-content: space-between; border-bottom: 1px solid #eaeaea; 
-        padding-bottom: 20px; margin-bottom: 40px;
+    .visual-canvas.template-3 {
+        display: grid;
+        grid-template-columns: [full-start] 1fr [content-start] minmax(0, 700px) [content-end] 1fr [full-end];
+        row-gap: 15px;
+        padding: 60px 0; /* no horizontal padding on wrapper to allow full bleed */
+        background: #ffffff;
     }
-    .visual-canvas.template-3 #default-title { 
-        text-align: left; font-size: clamp(2.6rem, 6vw, 4.2rem); font-weight: 500; 
-        letter-spacing: -0.02em; margin-bottom: 24px; color: #111;
+    
+    .visual-canvas.template-3 #ad-top { order: 0; grid-column: full; }
+    .visual-canvas.template-3 .article-layout-wrapper,
+    .visual-canvas.template-3 .article-container,
+    .visual-canvas.template-3 .meta-data {
+        display: contents;
     }
-    .visual-canvas.template-3 #default-content { 
-        font-size: 1.25rem; color: #444; line-height: 1.7; margin-bottom: 40px;
+    
+    .visual-canvas.template-3 > *,
+    .visual-canvas.template-3 .article-container > *,
+    .visual-canvas.template-3 .meta-data > span {
+        grid-column: content;
+        padding: 0 24px; /* inner padding for text */
     }
-    .visual-canvas.template-3 .hero-media { 
-        width: 100%; min-height: 480px; height: auto; aspect-ratio: 16/9; 
-        margin-bottom: 50px; border: none; border-radius: 0; box-shadow: none; align-items: center;
+    
+    /* 1. Category Pill */
+    .visual-canvas.template-3 .meta-data > span:nth-child(2) {
+        order: 1;
+        background-color: #ff3366;
+        color: #fff;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: inline-block;
+        justify-self: start;
+        margin-bottom: 10px;
+        border: none;
+        width: auto;
     }
-    .visual-canvas.template-3 .hero-subject-placeholder { 
-        width: 100%; height: 100%; border-radius: 0; background-color: #E2E8F0;
+    .visual-canvas.template-3 .meta-data > span:nth-child(2) small { display: none; }
+    
+    /* 2. Title */
+    .visual-canvas.template-3 #default-title {
+        order: 2;
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(2.5rem, 5vw, 3.5rem);
+        font-weight: 800;
+        line-height: 1.15;
+        color: #111;
+        margin: 0 0 20px 0;
+        text-align: left;
+        text-transform: none;
+    }
+    
+    /* 3. Meta Data (Date) */
+    .visual-canvas.template-3 .meta-data > span:nth-child(1) {
+        order: 3;
+        justify-self: start;
+        color: #888;
+        font-size: 0.85rem;
+        font-family: 'Inter', sans-serif;
+        margin-bottom: 40px;
+        font-weight: 500;
+    }
+    .visual-canvas.template-3 .meta-data > span:nth-child(1)::before {
+        content: "\23F2"; /* clock icon */
+        margin-right: 6px;
+    }
+    .visual-canvas.template-3 .meta-data > span:nth-child(1) small { display: none; }
+    .visual-canvas.template-3 .meta-data > span:nth-child(3) { display: none; }
+    
+    /* 4. Intro Text */
+    .visual-canvas.template-3 #default-content {
+        order: 4;
+        font-family: 'Merriweather', Georgia, serif;
+        font-size: 1.15rem;
+        line-height: 1.8;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 40px;
+        text-align: left;
+    }
+    
+    /* 5. Main Content */
+    .visual-canvas.template-3 #dropzone {
+        order: 5;
+        font-family: 'Merriweather', Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.8;
+        color: #444;
+    }
+    
+    /* Subheadings inside dropzone */
+    .visual-canvas.template-3 #dropzone h1,
+    .visual-canvas.template-3 #dropzone h2,
+    .visual-canvas.template-3 #dropzone h3 {
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        color: #111;
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+    }
+    
+    /* Drop cap */
+    .visual-canvas.template-3 #dropzone .canvas-block:first-child .edit-p::first-letter,
+    .visual-canvas.template-3 #dropzone .canvas-block:first-child div[data-type="text"]::first-letter {
+        font-size: 4rem;
+        font-weight: 700;
+        float: left;
+        line-height: 0.9;
+        margin-right: 12px;
+        margin-top: 4px;
+        color: #111;
+        font-family: 'Merriweather', Georgia, serif;
+    }
+    
+    /* 6. Hero Image (At the bottom) */
+    .visual-canvas.template-3 #default-hero {
+        order: 6;
+        grid-column: full; /* Full bleed */
+        width: 100%;
+        margin-top: 60px;
+        margin-bottom: 0;
+        border-radius: 0;
+        padding: 0; /* remove horizontal padding */
+        min-height: 50vh;
+        aspect-ratio: auto;
+    }
+    .visual-canvas.template-3 .hero-subject-placeholder { border-radius: 0; }
+    
+    .visual-canvas.template-3 #default-hero-caption {
+        order: 7;
+        grid-column: content;
+        text-align: left;
+        font-size: 0.9rem;
+        color: #888;
+        margin-top: 15px;
+    }
+    
+    /* Force hide sidebar */
+    .visual-canvas.template-3 .article-sidebar {
+        display: none !important;
+    }
+    
+    /* Responsive */
+    @media(max-width: 768px) {
+        .visual-canvas.template-3 { padding-top: 30px; }
+        .visual-canvas.template-3 > *,
+        .visual-canvas.template-3 .article-container > *,
+        .visual-canvas.template-3 .meta-data > span {
+            grid-column: 1 / -1 !important;
+        }
+        .visual-canvas.template-3 #default-hero { margin-top: 40px; }
     }
 
     /* 
@@ -678,6 +813,8 @@
         grid-template-columns: 1fr;
     }
 }
+
+
 
 
 
