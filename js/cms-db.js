@@ -225,23 +225,30 @@ async function deleteArticle(id) {
 // Global Cloud Ad Settings (Synced across all users and browsers)
 async function getAdSettingsAsync() {
   const firestore = typeof getFirestoreDb === 'function' ? getFirestoreDb() : null;
-  const defaultConfig = { social: '', popunder: '', b728: '', b160: '', b300: '', native: '', smartlink: '' };
+  const defaultConfig = { social: '', popunder: '', '728': '', '160': '', '300': '', native: '', smartlink: '', bannerCode: '', popunderCode: '' };
   
+  let cloudData = {};
   if (firestore) {
     try {
       const doc = await firestore.collection('nexus_settings').doc('ad_config').get();
       if (doc.exists) {
-        const data = doc.data();
-        Object.keys(defaultConfig).forEach(k => {
-            if(data[k] !== undefined) localStorage.setItem('ad_'+k, data[k]);
-        });
-        return { ...defaultConfig, ...data };
+        cloudData = doc.data() || {};
       }
     } catch (e) { console.warn("Firestore ad fetch error:", e); }
   }
   
-  Object.keys(defaultConfig).forEach(k => { defaultConfig[k] = localStorage.getItem('ad_'+k) || ''; });
-  return defaultConfig;
+  // Merge cloud data, localStorage fallbacks, and multi-key mapping
+  const result = {
+    social: cloudData.social || cloudData.socialBar || localStorage.getItem('ad_social') || '',
+    popunder: cloudData.popunder || cloudData.popunderCode || localStorage.getItem('ad_popunder') || '',
+    '728': cloudData['728'] || cloudData.bannerCode || localStorage.getItem('ad_728') || localStorage.getItem('ad_bannerCode') || '',
+    '160': cloudData['160'] || localStorage.getItem('ad_160') || '',
+    '300': cloudData['300'] || localStorage.getItem('ad_300') || '',
+    native: cloudData.native || localStorage.getItem('ad_native') || '',
+    smartlink: cloudData.smartlink || localStorage.getItem('ad_smartlink') || ''
+  };
+
+  return result;
 }
 
 async function saveAdSettingsAsync(configObj) {
@@ -324,5 +331,6 @@ async function getTrafficLogsAsync() {
     // Fallback
     return JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]').reverse();
 }
+
 
 
