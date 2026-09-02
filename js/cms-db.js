@@ -250,12 +250,31 @@ async function saveAdSettingsAsync(configObj) {
 // --- ANALYTICS CLOUD FUNCTIONS ---
 async function logTrafficAsync(pageName, path) {
     const firestore = typeof getFirestoreDb === 'function' ? getFirestoreDb() : null;
+    let country = 'Unknown';
+    let flag = '🌐';
+    
+    try {
+        // Fetch country data via free API
+        const geoRes = await fetch('https://get.geojs.io/v1/ip/geo.json');
+        if (geoRes.ok) {
+            const geoData = await geoRes.json();
+            country = geoData.country || 'Unknown';
+            if (geoData.country_code) {
+                flag = geoData.country_code.toUpperCase().replace(/./g, char => String.fromCodePoint(char.charCodeAt(0) + 127397));
+            }
+        }
+    } catch(e) { console.warn("GeoIP fetch failed"); }
+
+    const now = new Date();
     const logEntry = {
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toTimeString().split(' ')[0],
+        date: now.toISOString().split('T')[0],
+        time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        hour: now.getHours(), // Saved specifically to calculate peak posting times
         page: pageName,
         path: path,
-        timestamp: Date.now()
+        country: country,
+        flag: flag,
+        timestamp: now.getTime()
     };
 
     // Fallback Local Storage
@@ -291,3 +310,4 @@ async function getTrafficLogsAsync() {
     // Fallback
     return JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]').reverse();
 }
+

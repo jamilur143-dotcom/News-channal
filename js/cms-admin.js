@@ -547,7 +547,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         async function renderAnalytics() {
-            // Show loading state first
             const totalViewsEl = document.getElementById('a-total-views');
             if(totalViewsEl) totalViewsEl.textContent = '...';
 
@@ -567,35 +566,73 @@ document.addEventListener('DOMContentLoaded', () => {
             const todayViewsEl = document.getElementById('a-today-views');
             if(todayViewsEl) todayViewsEl.textContent = todayViews;
 
+            // Calculate Top Page, Peak Time, and Top Country
             const pageCounts = {};
+            const hourCounts = {};
+            const countryCounts = {};
+
             logs.forEach(l => {
                 pageCounts[l.page] = (pageCounts[l.page] || 0) + 1;
+                if (l.hour !== undefined) {
+                    hourCounts[l.hour] = (hourCounts[l.hour] || 0) + 1;
+                }
+                if (l.country) {
+                    const cKey = `${l.flag || '🌐'} ${l.country}`;
+                    countryCounts[cKey] = (countryCounts[cKey] || 0) + 1;
+                }
             });
             
             let topPage = '-';
             let maxCount = 0;
             for (const [page, count] of Object.entries(pageCounts)) {
-                if (count > maxCount) {
-                    maxCount = count;
-                    topPage = page;
+                if (count > maxCount) { maxCount = count; topPage = page; }
+            }
+
+            let peakHour = '-';
+            let maxHourCount = 0;
+            for (const [hour, count] of Object.entries(hourCounts)) {
+                if (count > maxHourCount) { 
+                    maxHourCount = count; 
+                    const h = parseInt(hour);
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    const formattedHour = h % 12 || 12;
+                    peakHour = `${formattedHour}:00 ${ampm}`;
                 }
             }
-            const topPageEl = document.getElementById('a-top-page');
-            if(topPageEl) topPageEl.textContent = topPage;
 
-            // Populate Table
+            let topCountry = '-';
+            let maxCountryCount = 0;
+            for (const [country, count] of Object.entries(countryCounts)) {
+                if (count > maxCountryCount) { maxCountryCount = count; topCountry = country; }
+            }
+
+            // Inject Top Page, Peak Time & Top Country into the existing UI box
+            const topPageEl = document.getElementById('a-top-page');
+            if(topPageEl) {
+                topPageEl.innerHTML = `<strong>${topPage}</strong><br><span style="font-size:0.85rem; color:#E53935; display:block; margin-top:6px;">🔥 Peak Time: ${peakHour}</span><span style="font-size:0.85rem; color:#2E7D32; display:block;">🌍 Top: ${topCountry}</span>`;
+            }
+
+            // Populate Table (Dynamically update headers to include COUNTRY)
             const tbody = document.getElementById('a-traffic-log');
             if (tbody) {
+                const theadTr = tbody.parentElement.querySelector('thead tr');
+                if (theadTr && !theadTr.innerHTML.includes('COUNTRY')) {
+                    theadTr.innerHTML = `<th style="text-align:left; padding:12px; font-weight:600; color:#475569; border-bottom:2px solid #e2e8f0;">DATE</th>
+                                         <th style="text-align:left; padding:12px; font-weight:600; color:#475569; border-bottom:2px solid #e2e8f0;">TIME</th>
+                                         <th style="text-align:left; padding:12px; font-weight:600; color:#475569; border-bottom:2px solid #e2e8f0;">COUNTRY</th>
+                                         <th style="text-align:left; padding:12px; font-weight:600; color:#475569; border-bottom:2px solid #e2e8f0;">PAGE VISITED</th>`;
+                }
+
                 const recentLogs = logs.slice(0, 10);
                 if (recentLogs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">No traffic data recorded yet.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:20px;">No traffic data recorded yet.</td></tr>';
                 } else {
                     tbody.innerHTML = recentLogs.map(l => `
-                        <tr>
-                            <td>${l.date}</td>
-                            <td>${l.time}</td>
-                            <td style="font-weight:600; color:#3f51b5;">${l.page}</td>
-                            <td style="font-size:0.8rem; color:#64748b;">${l.path}</td>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding:12px; color:#64748b;">${l.date}</td>
+                            <td style="padding:12px; color:#E53935; font-weight:500;">⏱️ ${l.time || 'N/A'}</td>
+                            <td style="padding:12px; font-weight:500;">${l.flag || '🌐'} ${l.country || 'Unknown'}</td>
+                            <td style="padding:12px; font-weight:600; color:#3f51b5;">${l.page}</td>
                         </tr>
                     `).join('');
                 }
@@ -650,3 +687,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
