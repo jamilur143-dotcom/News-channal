@@ -149,10 +149,15 @@ async function getArticleByIdAsync(id) {
 }
 
 async function addArticle(article) {
-  // 1. Save to Local Cache first
-  const articles = getArticles().filter(a => a.id !== article.id);
-  articles.unshift(article);
-  localStorage.setItem(DB_KEY, JSON.stringify(articles));
+  // 1. Save to Local Cache first (Safe Mode for Quota Limits)
+  try {
+      const articles = getArticles().filter(a => a.id !== article.id);
+      articles.unshift(article);
+      localStorage.setItem(DB_KEY, JSON.stringify(articles));
+  } catch (e) {
+      console.warn("Local storage quota exceeded. Clearing cache to prioritize Cloud Save.");
+      localStorage.removeItem(DB_KEY);
+  }
 
   // 2. Save to Firestore Cloud Database
   const firestore = getFirestoreDb();
@@ -171,9 +176,14 @@ async function addArticle(article) {
 }
 
 async function updateArticle(id, updatedData) {
-  let articles = getArticles();
-  articles = articles.map(a => a.id === id ? { ...a, ...updatedData } : a);
-  localStorage.setItem(DB_KEY, JSON.stringify(articles));
+  try {
+      let articles = getArticles();
+      articles = articles.map(a => a.id === id ? { ...a, ...updatedData } : a);
+      localStorage.setItem(DB_KEY, JSON.stringify(articles));
+  } catch(e) {
+      console.warn("Local storage quota exceeded on update. Clearing cache.");
+      localStorage.removeItem(DB_KEY);
+  }
 
   const firestore = getFirestoreDb();
   if (firestore && id) {
@@ -191,9 +201,13 @@ async function updateArticle(id, updatedData) {
 }
 
 async function deleteArticle(id) {
-  let articles = getArticles();
-  articles = articles.filter(a => a.id !== id);
-  localStorage.setItem(DB_KEY, JSON.stringify(articles));
+  try {
+      let articles = getArticles();
+      articles = articles.filter(a => a.id !== id);
+      localStorage.setItem(DB_KEY, JSON.stringify(articles));
+  } catch(e) {
+      localStorage.removeItem(DB_KEY);
+  }
 
   const firestore = getFirestoreDb();
   if (firestore && id) {
@@ -310,4 +324,5 @@ async function getTrafficLogsAsync() {
     // Fallback
     return JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]').reverse();
 }
+
 
