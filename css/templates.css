@@ -1282,91 +1282,114 @@
 
 
 
+
 /* ============================================================
-   MOBILE RESPONSIVE FIXES FOR TEMPLATES & AD SLOTS
+   UNIVERSAL MOBILE RESPONSIVE FIXES (ALL TEMPLATES & ADS)
    ============================================================ */
 @media screen and (max-width: 768px) {
     
-    /* 1. General Canvas & Layout Adjustments */
-    .visual-canvas, .article-container {
-        padding: 12px !important;
+    /* 1. NORMALIZE ALL 9 TEMPLATES FOR MOBILE */
+    .visual-canvas, 
+    .visual-canvas[class*="template-"] {
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 10px !important;
         width: 100% !important;
         box-sizing: border-box !important;
         overflow-x: hidden !important;
     }
 
-    /* 2. Responsive Split Columns (2 Columns to 1 Column on Mobile) */
+    /* Force all structural wrappers to stack vertically */
+    .visual-canvas[class*="template-"] .article-layout-wrapper,
+    .visual-canvas[class*="template-"] .split-container,
+    .article-layout-wrapper,
     .split-container {
         display: flex !important;
         flex-direction: column !important;
+        width: 100% !important;
         gap: 16px !important;
+        margin: 0 !important;
     }
-    
+
+    /* Disable sidebars and floats on all templates */
+    .visual-canvas[class*="template-"] > aside,
+    .visual-canvas[class*="template-"] > main,
+    .article-sidebar,
+    .article-container,
     .inner-dropzone {
         width: 100% !important;
-        min-height: auto !important;
+        float: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin-top: 10px !important;
     }
 
-    /* 3. Images and Media Optimization */
-    img, video, iframe, .hero-media, #default-hero-img {
+    /* 2. ADVERTISEMENTS & IFRAME FIX (Force Fit & Scale) */
+    .ad-horizontal, .ad-vertical, .ad-square, 
+    .predefined-ad, .in-content-ad, .ad-inline, .ad-zone {
+        width: 100% !important;
+        max-width: 100vw !important;
+        height: auto !important;
+        min-height: 50px !important;
+        margin: 16px auto !important;
+        padding: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important; /* Prevents stretching the body */
+    }
+
+    /* Targeting inner contents of Ads (Third-party scripts, iframes, ins, img) */
+    .ad-horizontal iframe, .ad-vertical iframe, .ad-square iframe, 
+    .in-content-ad iframe, .ad-zone iframe,
+    .ad-horizontal ins, .ad-vertical ins, .ad-square ins,
+    .ad-horizontal img, .ad-vertical img, .ad-square img {
+        max-width: 100% !important;
+        width: 100% !important;
+        height: auto !important;
+        object-fit: contain !important;
+        transform-origin: center center;
+    }
+
+    /* Optional: If a 728px ad is extremely stubborn, force scale it down */
+    @supports (aspect-ratio: 1) {
+        .ad-horizontal iframe, .in-content-ad iframe {
+            max-width: 100vw !important;
+        }
+    }
+
+    /* 3. IMAGES & MEDIA */
+    img, video, .hero-media, #default-hero-img {
         max-width: 100% !important;
         height: auto !important;
-        object-fit: contain;
+        object-fit: cover !important;
     }
-    
+
     .hero-media {
         min-height: 200px !important;
-    }
-
-    /* 4. Advertisement Slots Fix (Preventing Cut-offs) */
-    .ad-horizontal, .ad-vertical, .ad-square, .predefined-ad, .ad-inline {
         width: 100% !important;
-        max-width: 100% !important;
-        height: auto !important;
-        min-height: 100px !important; /* Prevents collapsing */
-        overflow: hidden !important;
-        margin: 16px auto !important;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        box-sizing: border-box;
+        margin-left: 0 !important;
     }
 
-    /* Forces iframes inside ads to shrink to fit the mobile screen */
-    .ad-horizontal iframe, .ad-vertical iframe, .ad-square iframe, .ad-zone iframe {
-        max-width: 100% !important;
-        width: 100% !important;
-    }
-
-    /* 5. Sidebar Restructuring for Mobile */
-    .article-layout-wrapper {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-    
-    .article-sidebar {
-        width: 100% !important;
-        margin-top: 24px !important;
-        padding-left: 0 !important;
-        border-left: none !important;
-    }
-
-    /* 6. Typography & Text Scaling */
+    /* 4. TYPOGRAPHY SCALING */
     #default-title, h1 {
-        font-size: clamp(1.5rem, 5vw, 2.2rem) !important;
+        font-size: clamp(1.6rem, 6vw, 2.2rem) !important;
         line-height: 1.3 !important;
+        word-wrap: break-word !important;
+        margin-bottom: 12px !important;
     }
     
     .edit-p, p, .article-text {
-        font-size: 1rem !important;
+        font-size: 1.05rem !important;
         line-height: 1.6 !important;
         word-wrap: break-word !important;
     }
     
-    /* Adjust Meta Data Display */
     .meta-data {
         flex-direction: column !important;
-        gap: 8px !important;
+        gap: 6px !important;
         align-items: flex-start !important;
+        width: 100% !important;
     }
 }
