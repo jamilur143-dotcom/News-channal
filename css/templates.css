@@ -1281,3 +1281,92 @@
 
 
 
+
+/* ============================================================
+   MOBILE RESPONSIVE FIXES FOR TEMPLATES & AD SLOTS
+   ============================================================ */
+@media screen and (max-width: 768px) {
+    
+    /* 1. General Canvas & Layout Adjustments */
+    .visual-canvas, .article-container {
+        padding: 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+
+    /* 2. Responsive Split Columns (2 Columns to 1 Column on Mobile) */
+    .split-container {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+    }
+    
+    .inner-dropzone {
+        width: 100% !important;
+        min-height: auto !important;
+    }
+
+    /* 3. Images and Media Optimization */
+    img, video, iframe, .hero-media, #default-hero-img {
+        max-width: 100% !important;
+        height: auto !important;
+        object-fit: contain;
+    }
+    
+    .hero-media {
+        min-height: 200px !important;
+    }
+
+    /* 4. Advertisement Slots Fix (Preventing Cut-offs) */
+    .ad-horizontal, .ad-vertical, .ad-square, .predefined-ad, .ad-inline {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        min-height: 100px !important; /* Prevents collapsing */
+        overflow: hidden !important;
+        margin: 16px auto !important;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-sizing: border-box;
+    }
+
+    /* Forces iframes inside ads to shrink to fit the mobile screen */
+    .ad-horizontal iframe, .ad-vertical iframe, .ad-square iframe, .ad-zone iframe {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    /* 5. Sidebar Restructuring for Mobile */
+    .article-layout-wrapper {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    
+    .article-sidebar {
+        width: 100% !important;
+        margin-top: 24px !important;
+        padding-left: 0 !important;
+        border-left: none !important;
+    }
+
+    /* 6. Typography & Text Scaling */
+    #default-title, h1 {
+        font-size: clamp(1.5rem, 5vw, 2.2rem) !important;
+        line-height: 1.3 !important;
+    }
+    
+    .edit-p, p, .article-text {
+        font-size: 1rem !important;
+        line-height: 1.6 !important;
+        word-wrap: break-word !important;
+    }
+    
+    /* Adjust Meta Data Display */
+    .meta-data {
+        flex-direction: column !important;
+        gap: 8px !important;
+        align-items: flex-start !important;
+    }
+}
