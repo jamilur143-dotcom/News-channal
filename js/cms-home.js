@@ -77,10 +77,11 @@
         
         gridContainer.innerHTML = gridHtml;
     }
-    /* â”€â”€ Inject Adsterra Ads (Cloud Synced) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Inject Adsterra Ads (Cloud Synced) ─────────────────── */
     const adSettings = await getAdSettingsAsync();
-    const adBannerCode = adSettings.bannerCode || localStorage.getItem('adBannerCode');
-    const adPopunderCode = adSettings.popunderCode || localStorage.getItem('adPopunderCode');
+    // Fetching the correct keys saved by the Admin Panel
+    const adBannerCode = adSettings['728'] || adSettings['300'] || adSettings['160'] || '';
+    const adPopunderCode = adSettings['popunder'] || adSettings['social'] || '';
 
     // 1. Inject Popunder / Social Bar Script
     if (adPopunderCode && adPopunderCode.trim() !== '') {
@@ -135,4 +136,5 @@
         });
     }
 });
+
 
