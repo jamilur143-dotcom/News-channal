@@ -649,14 +649,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-}
-                    }
-                });
-            }
-        }
-    }
 });
-
-
-
-
