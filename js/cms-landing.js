@@ -80,11 +80,21 @@
         }
     }
 
-    // --- AD INJECTION SYSTEM (Cloud Synced & Fallback Safe) ---
+        // --- AD INJECTION SYSTEM (Cloud Synced & Fallback Safe) ---
     const adSettings = await getAdSettingsAsync();
     
-    // Fallback across all possible banner key variations from Admin panel
-    const adBannerCode = adSettings['728'] || adSettings['300'] || adSettings['160'] || adSettings.bannerCode || localStorage.getItem('ad_728') || localStorage.getItem('ad_bannerCode') || '';
+    // Device-Specific Ad Routing
+    const isMobile = window.innerWidth <= 768;
+    let adBannerCode = '';
+    
+    if (isMobile) {
+        // Serve Mobile Banners first (320x50 or 300x250)
+        adBannerCode = adSettings['320'] || adSettings['300'] || adSettings.bannerCode || localStorage.getItem('ad_320') || localStorage.getItem('ad_300') || localStorage.getItem('ad_bannerCode') || '';
+    } else {
+        // Serve Desktop Leaderboard (728x90)
+        adBannerCode = adSettings['728'] || adSettings.bannerCode || localStorage.getItem('ad_728') || localStorage.getItem('ad_bannerCode') || '';
+    }
+
     const adPopunderCode = adSettings['popunder'] || adSettings['social'] || adSettings.popunderCode || localStorage.getItem('ad_popunder') || '';
 
     // 1. Social Bar/Popunder Script (Global Body Injection)
@@ -147,7 +157,7 @@
             
             const doc = iframe.contentWindow || iframe.contentDocument.document || iframe.contentDocument;
             doc.document.open();
-            doc.document.write(`<!DOCTYPE html><html><head><style>html,body{margin:0;padding:0;display:flex;justify-content:center;align-items:flex-start;background:transparent;overflow:hidden;width:100%;height:100%;}</style></head><body>${adBannerCode}</body></html>`);
+            doc.document.write(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>html,body{margin:0;padding:0;display:flex;justify-content:center;align-items:center;background:transparent;overflow:visible;width:100%;height:100%;}</style></head><body>${adBannerCode}</body></html>`);
             doc.document.close();
         }
 
@@ -179,6 +189,7 @@
         }
     }
 });
+
 
 
 

@@ -456,22 +456,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveAdsBtn) {
         if(typeof getAdSettingsAsync === 'function') {
             getAdSettingsAsync().then(config => {
-                adIds.forEach(id => {
-                    const el = document.getElementById('ad-' + id);
+                adIds.forEach(id => {                    const el = document.getElementById('ad-' + id);
                     if (el) el.value = config[id] || '';
                 });
+                const el320 = document.getElementById('ad-320');
+                if (el320) el320.value = config['320'] || '';
             });
         }
 
         saveAdsBtn.addEventListener('click', async () => {
             saveAdsBtn.disabled = true;
-            saveAdsBtn.textContent = 'Saving...';
-            
-            const configObj = {};
+            saveAdsBtn.textContent = 'Saving...';            const configObj = {};
             adIds.forEach(id => {
                 const el = document.getElementById('ad-' + id);
                 configObj[id] = el ? el.value.trim() : '';
             });
+            const el320 = document.getElementById('ad-320');
+            if (el320) configObj['320'] = el320.value.trim();
 
             try {
                 if(typeof saveAdSettingsAsync === 'function') {
@@ -687,4 +688,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
 

@@ -225,7 +225,7 @@ async function deleteArticle(id) {
 // Global Cloud Ad Settings (Synced across all users and browsers)
 async function getAdSettingsAsync() {
   const firestore = typeof getFirestoreDb === 'function' ? getFirestoreDb() : null;
-  const defaultConfig = { social: '', popunder: '', '728': '', '160': '', '300': '', native: '', smartlink: '', bannerCode: '', popunderCode: '' };
+  const defaultConfig = { social: '', popunder: '', '728': '', '320': '', '160': '', '300': '', native: '', smartlink: '', bannerCode: '', popunderCode: '' };
   
   let cloudData = {};
   if (firestore) {
@@ -242,6 +242,7 @@ async function getAdSettingsAsync() {
     social: cloudData.social || cloudData.socialBar || localStorage.getItem('ad_social') || '',
     popunder: cloudData.popunder || cloudData.popunderCode || localStorage.getItem('ad_popunder') || '',
     '728': cloudData['728'] || cloudData.bannerCode || localStorage.getItem('ad_728') || localStorage.getItem('ad_bannerCode') || '',
+    '320': cloudData['320'] || localStorage.getItem('ad_320') || '',
     '160': cloudData['160'] || localStorage.getItem('ad_160') || '',
     '300': cloudData['300'] || localStorage.getItem('ad_300') || '',
     native: cloudData.native || localStorage.getItem('ad_native') || '',
@@ -331,6 +332,7 @@ async function getTrafficLogsAsync() {
     // Fallback
     return JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]').reverse();
 }
+
 
 
 
