@@ -246,3 +246,48 @@ async function saveAdSettingsAsync(configObj) {
 
 
 
+
+// --- ANALYTICS CLOUD FUNCTIONS ---
+async function logTrafficAsync(pageName, path) {
+    const firestore = typeof getFirestoreDb === 'function' ? getFirestoreDb() : null;
+    const logEntry = {
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().split(' ')[0],
+        page: pageName,
+        path: path,
+        timestamp: Date.now()
+    };
+
+    // Fallback Local Storage
+    let logs = JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]');
+    logs.push(logEntry);
+    if (logs.length > 1000) logs = logs.slice(logs.length - 1000);
+    localStorage.setItem('siteTrafficLogs', JSON.stringify(logs));
+
+    // Push to Firestore Cloud
+    if (firestore) {
+        try {
+            await firestore.collection('nexus_analytics_logs').add(logEntry);
+        } catch (e) {
+            console.warn("Firestore analytics logging failed:", e);
+        }
+    }
+}
+
+async function getTrafficLogsAsync() {
+    const firestore = typeof getFirestoreDb === 'function' ? getFirestoreDb() : null;
+    if (firestore) {
+        try {
+            const snapshot = await firestore.collection('nexus_analytics_logs').orderBy('timestamp', 'desc').limit(1000).get();
+            if (!snapshot.empty) {
+                const logs = [];
+                snapshot.forEach(doc => logs.push(doc.data()));
+                return logs;
+            }
+        } catch (e) {
+            console.warn("Firestore analytics fetch failed:", e);
+        }
+    }
+    // Fallback
+    return JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]').reverse();
+}

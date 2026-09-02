@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', async () => {
+﻿document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
     
@@ -18,25 +18,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Update document title for SEO
     document.title = article.title;
-
     // --- TRAFFIC TRACKING ---
-    function logTraffic(pageName, path) {
-        try {
-            let logs = JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]');
-            const now = new Date();
-            logs.push({
-                date: now.toISOString().split('T')[0],
-                time: now.toTimeString().split(' ')[0],
-                page: pageName,
-                path: path,
-                timestamp: now.getTime()
-            });
-            // Keep last 1000 logs to prevent localStorage overflow
-            if (logs.length > 1000) logs = logs.slice(logs.length - 1000);
-            localStorage.setItem('siteTrafficLogs', JSON.stringify(logs));
-        } catch(e) {}
+    if (typeof logTrafficAsync === 'function') {
+        logTrafficAsync(article.title || 'Untitled Article', window.location.pathname + window.location.search);
     }
-    logTraffic(article.title || 'Untitled Article', window.location.pathname + window.location.search);
 
     // 1. Remove the static hero-media placeholder container from landing.html since the builder provides its own image block
     const mediaContainer = document.getElementById('dynamic-landing-media');
@@ -192,3 +177,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+

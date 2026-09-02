@@ -546,12 +546,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        function renderAnalytics() {
-            const logs = JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]');
+        async function renderAnalytics() {
+            // Show loading state first
+            const totalViewsEl = document.getElementById('a-total-views');
+            if(totalViewsEl) totalViewsEl.textContent = '...';
+
+            let logs = [];
+            if (typeof getTrafficLogsAsync === 'function') {
+                logs = await getTrafficLogsAsync();
+            } else {
+                logs = JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]').reverse();
+            }
             
             // Calculate Stats
             const totalViews = logs.length;
-            const totalViewsEl = document.getElementById('a-total-views');
             if(totalViewsEl) totalViewsEl.textContent = totalViews;
 
             const todayStr = new Date().toISOString().split('T')[0];
@@ -578,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Populate Table
             const tbody = document.getElementById('a-traffic-log');
             if (tbody) {
-                const recentLogs = [...logs].reverse().slice(0, 10);
+                const recentLogs = logs.slice(0, 10);
                 if (recentLogs.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">No traffic data recorded yet.</td></tr>';
                 } else {
@@ -641,7 +649,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+}
+                    }
+                });
+            }
+        }
+    }
 });
+
 
 
 

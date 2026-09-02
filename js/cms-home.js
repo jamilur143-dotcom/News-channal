@@ -1,21 +1,8 @@
-document.addEventListener('DOMContentLoaded', async () => {
+﻿document.addEventListener('DOMContentLoaded', async () => {
     // --- TRAFFIC TRACKING ---
-    function logTraffic(pageName, path) {
-        try {
-            let logs = JSON.parse(localStorage.getItem('siteTrafficLogs') || '[]');
-            const now = new Date();
-            logs.push({
-                date: now.toISOString().split('T')[0],
-                time: now.toTimeString().split(' ')[0],
-                page: pageName,
-                path: path,
-                timestamp: now.getTime()
-            });
-            if (logs.length > 1000) logs = logs.slice(logs.length - 1000);
-            localStorage.setItem('siteTrafficLogs', JSON.stringify(logs));
-        } catch(e) {}
+    if (typeof logTrafficAsync === 'function') {
+        logTrafficAsync('News Homepage', window.location.pathname);
     }
-    logTraffic('News Homepage', window.location.pathname);
 
     let allArticles = await getArticlesAsync();
     const articles = allArticles ? allArticles.filter(art => art.status !== 'Draft') : [];
@@ -26,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Older articles get pushed down to the Grid
     const gridArticles = articles.slice(1);
 
-    /* ── Render Hero ──────────────────────────────────────── */
+    /* â”€â”€ Render Hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const heroContainer = document.getElementById('dynamic-hero');
     if (heroContainer) {
         let heroHtml = '';
@@ -38,12 +25,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         heroHtml += `
           <div class="hero-content">
-            <span class="badge badge-breaking">🔴 Latest Post</span>
+            <span class="badge badge-breaking">ðŸ”´ Latest Post</span>
             <h1>${hero.title}</h1>
             <p>${hero.excerpt || 'Read the full story to learn more about this breaking development.'}</p>
             <div class="hero-meta">
-              <span>✍️ Nexus Desk</span>
-              <span>🕒 <time>${new Date(hero.date).toLocaleDateString()}</time></span>
+              <span>âœï¸ Nexus Desk</span>
+              <span>ðŸ•’ <time>${new Date(hero.date).toLocaleDateString()}</time></span>
             </div>
             <div class="hero-cta">
               <a href="landing.html?id=${hero.id}" class="btn btn-accent">Read Full Story</a>
@@ -53,11 +40,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         heroContainer.innerHTML = heroHtml;
     }
 
-    /* ── Render Grid ──────────────────────────────────────── */
+    /* â”€â”€ Render Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const gridContainer = document.getElementById('dynamic-news-grid');
     if (gridContainer) {
         const gridHtml = gridArticles.map((article, index) => {
-            const defaultIcons = ['🏛️', '💻', '🌍', '⚽', '📈', '🎬'];
+            const defaultIcons = ['ðŸ›ï¸', 'ðŸ’»', 'ðŸŒ', 'âš½', 'ðŸ“ˆ', 'ðŸŽ¬'];
             const icon = defaultIcons[index % defaultIcons.length];
 
             let imgHtml = article.media 
@@ -90,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         gridContainer.innerHTML = gridHtml;
     }
-    /* ── Inject Adsterra Ads (Cloud Synced) ─────────────────── */
+    /* â”€â”€ Inject Adsterra Ads (Cloud Synced) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const adSettings = await getAdSettingsAsync();
     const adBannerCode = adSettings.bannerCode || localStorage.getItem('adBannerCode');
     const adPopunderCode = adSettings.popunderCode || localStorage.getItem('adPopunderCode');
@@ -148,3 +135,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 });
+
