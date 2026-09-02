@@ -1395,3 +1395,45 @@
         padding: 10px !important;
     }
 }
+
+/* ============================================================
+   FINAL BULLETPROOF AD SCALING FOR MOBILE (CSS ONLY)
+   ============================================================ */
+@media screen and (max-width: 768px) {
+    
+    /* 1. Force all Ad Containers to stay within the mobile screen */
+    .ad-horizontal, .ad-vertical, .ad-square, 
+    .predefined-ad, .in-content-ad, .ad-inline, .ad-zone {
+        width: 100% !important;
+        max-width: 100vw !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        margin: 15px auto !important;
+        padding: 0 !important;
+        overflow: hidden !important; 
+        box-sizing: border-box !important;
+    }
+
+    /* 2. Force IFRAMES and Third-party Ad scripts to shrink and fit */
+    .ad-horizontal iframe, .in-content-ad iframe, 
+    .ad-vertical iframe, .ad-square iframe, .ad-zone iframe,
+    .ad-horizontal ins, .in-content-ad ins,
+    .ad-horizontal *, .in-content-ad * {
+        max-width: 100% !important;
+        width: 100% !important;
+        height: auto !important;
+        object-fit: contain !important;
+    }
+
+    /* 3. Extreme Fallback for stubborn 728px Desktop Ads loading on Mobile */
+    /* This physically zooms out the large ad to fit perfectly on a ~360px screen */
+    .ad-horizontal > iframe[width="728"], 
+    .in-content-ad > iframe[width="728"] {
+        width: 728px !important;
+        max-width: none !important;
+        transform: scale(0.45) !important;
+        transform-origin: top center !important;
+        margin-bottom: -45px !important; /* Removes dead space caused by scaling */
+    }
+}
