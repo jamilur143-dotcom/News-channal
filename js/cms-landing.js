@@ -80,11 +80,12 @@
         }
     }
 
-    // --- AD INJECTION SYSTEM (Cloud Synced) ---
+    // --- AD INJECTION SYSTEM (Cloud Synced & Fallback Safe) ---
     const adSettings = await getAdSettingsAsync();
-    // Fetching the correct keys saved by the Admin Panel
-    const adBannerCode = adSettings['728'] || adSettings['300'] || adSettings['160'] || '';
-    const adPopunderCode = adSettings['popunder'] || adSettings['social'] || '';
+    
+    // Fallback across all possible banner key variations from Admin panel
+    const adBannerCode = adSettings['728'] || adSettings['300'] || adSettings['160'] || adSettings.bannerCode || localStorage.getItem('ad_728') || localStorage.getItem('ad_bannerCode') || '';
+    const adPopunderCode = adSettings['popunder'] || adSettings['social'] || adSettings.popunderCode || localStorage.getItem('ad_popunder') || '';
 
     // 1. Social Bar/Popunder Script (Global Body Injection)
     if (adPopunderCode && adPopunderCode.trim() !== '') {
@@ -178,5 +179,6 @@
         }
     }
 });
+
 
 
